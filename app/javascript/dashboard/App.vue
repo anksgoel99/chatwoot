@@ -53,6 +53,7 @@ export default {
     return {
       latestChatwootVersion: null,
       reconnectService: null,
+      isTapifyCompactUI: localStorage.getItem('tapifyCompactUI') === 'true',
     };
   },
   computed: {
@@ -91,6 +92,13 @@ export default {
     }
   },
   methods: {
+    toggleTapifyCompactUI() {
+    this.isTapifyCompactUI = !this.isTapifyCompactUI;
+    localStorage.setItem(
+      'tapifyCompactUI',
+      this.isTapifyCompactUI ? 'true' : 'false'
+    );
+    },
     initializeColorTheme() {
       setColorTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
     },
@@ -135,7 +143,10 @@ export default {
   <div
     v-if="!authUIFlags.isFetching"
     id="app"
-    class="flex flex-col w-full h-screen min-h-0 bg-n-background"
+    :class="[
+      'flex flex-col w-full h-screen min-h-0 bg-n-background',
+       isTapifyCompactUI ? 'tapify-compact-ui' : '',
+    ]"
     :dir="isRTL ? 'rtl' : 'ltr'"
   >
     <UpdateBanner :latest-chatwoot-version="latestChatwootVersion" />
@@ -149,6 +160,13 @@ export default {
         <component :is="Component" />
       </transition>
     </router-view>
+    <button
+      class="tapify-compact-toggle"
+      type="button"
+      @click="toggleTapifyCompactUI"
+    >
+      {{ isTapifyCompactUI ? 'Standard UI' : 'Compact UI' }}
+    </button>
     <WootSnackbarBox />
     <NetworkNotification />
   </div>
@@ -168,5 +186,67 @@ export default {
 
 .v-popper--theme-tooltip .v-popper__arrow-container {
   display: none;
+}
+.tapify-compact-toggle {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 9999;
+  background: #111827;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.22);
+}
+
+.tapify-compact-ui [data-bubble-name="image"] {
+  padding: 6px !important;
+}
+
+.tapify-compact-ui [data-bubble-name="image"] img {
+  max-width: 230px !important;
+  max-height: 190px !important;
+  object-fit: contain !important;
+  border-radius: 8px !important;
+}
+
+.tapify-compact-ui [data-bubble-name="attachment"] {
+  padding: 8px !important;
+}
+
+.tapify-compact-ui [data-bubble-name] {
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+
+.tapify-compact-ui textarea {
+  min-height: 40px !important;
+  font-size: 13px !important;
+}
+
+.tapify-compact-ui .message,
+.tapify-compact-ui [class*='message'],
+.tapify-compact-ui [class*='Message'] {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+}
+
+.tapify-compact-ui [class*='conversation'],
+.tapify-compact-ui [class*='Conversation'] {
+  font-size: 13px;
+}
+
+.tapify-compact-ui [class*='sidebar'],
+.tapify-compact-ui [class*='Sidebar'] {
+  font-size: 13px;
+}
+
+.tapify-compact-ui [class*='card'],
+.tapify-compact-ui [class*='Card'] {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
 }
 </style>
