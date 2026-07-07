@@ -93,11 +93,11 @@ export default {
   },
   methods: {
     toggleTapifyCompactUI() {
-    this.isTapifyCompactUI = !this.isTapifyCompactUI;
-    localStorage.setItem(
-      'tapifyCompactUI',
-      this.isTapifyCompactUI ? 'true' : 'false'
-    );
+      this.isTapifyCompactUI = !this.isTapifyCompactUI;
+      localStorage.setItem(
+        'tapifyCompactUI',
+        this.isTapifyCompactUI ? 'true' : 'false'
+      );
     },
     initializeColorTheme() {
       setColorTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -143,10 +143,8 @@ export default {
   <div
     v-if="!authUIFlags.isFetching"
     id="app"
-    :class="[
-      'flex flex-col w-full h-screen min-h-0 bg-n-background',
-       isTapifyCompactUI ? 'tapify-compact-ui' : '',
-    ]"
+    class="flex flex-col w-full h-screen min-h-0 bg-n-background"
+    :class="[isTapifyCompactUI ? 'tapify-compact-ui' : '']"
     :dir="isRTL ? 'rtl' : 'ltr'"
   >
     <UpdateBanner :latest-chatwoot-version="latestChatwootVersion" />
@@ -194,32 +192,68 @@ export default {
   z-index: 9999;
   background: #111827;
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 999px;
   padding: 7px 12px;
   font-size: 12px;
   font-weight: 600;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.22);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
 }
 
-.tapify-compact-ui [data-bubble-name="image"] {
+.tapify-compact-ui [data-bubble-name='image'] {
   padding: 6px !important;
 }
 
-.tapify-compact-ui [data-bubble-name="image"] img {
+.tapify-compact-ui [data-bubble-name='image'] img {
   max-width: 230px !important;
   max-height: 190px !important;
   object-fit: contain !important;
   border-radius: 8px !important;
 }
 
-.tapify-compact-ui [data-bubble-name="attachment"] {
+.tapify-compact-ui [data-bubble-name='attachment'] {
   padding: 8px !important;
 }
 
 .tapify-compact-ui [data-bubble-name] {
   font-size: 13px !important;
   line-height: 1.35 !important;
+}
+
+.tapify-compact-ui [data-bubble-name='text'] {
+  width: fit-content !important;
+  max-width: min(340px, 80%) !important;
+  padding: 8px 11px !important;
+}
+
+.tapify-compact-ui [data-bubble-name='text'] > div {
+  gap: 4px !important;
+}
+
+.tapify-compact-ui [data-bubble-name='text'] .prose-bubble {
+  font-size: 13px !important;
+  line-height: 1.34 !important;
+}
+
+.tapify-compact-ui [data-bubble-name='text'] .prose-bubble p {
+  margin-top: 0.6em !important;
+  margin-bottom: 0.6em !important;
+}
+
+.tapify-compact-ui [data-bubble-name='text'] .prose-bubble br {
+  display: block;
+  content: '';
+  margin-top: 0.2em;
+}
+
+.tapify-compact-ui [data-bubble-name='text'] [class*='message-meta'],
+.tapify-compact-ui [data-bubble-name='text'] time {
+  margin-top: 4px !important;
+  font-size: 11px !important;
+}
+
+.tapify-compact-ui .message-bubble-container {
+  margin-bottom: 5px !important;
 }
 
 .tapify-compact-ui textarea {
