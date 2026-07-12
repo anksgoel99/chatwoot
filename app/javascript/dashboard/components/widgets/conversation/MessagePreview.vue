@@ -61,7 +61,7 @@ export default {
 </script>
 
 <template>
-  <div class="overflow-hidden text-ellipsis whitespace-nowrap">
+  <div class="overflow-hidden text-ellipsis line-clamp-2 leading-normal">
     <template v-if="showMessageType">
       <fluent-icon
         v-if="isMessagePrivate"

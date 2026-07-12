@@ -201,3 +201,12 @@ code {
 table {
   @apply border-spacing-0 text-sm w-full;
 }
+
+@media (max-width: 768px) {
+  html, body {
+    overflow: hidden;
+    position: fixed;
+    height: 100%;
+    width: 100%;
+  }
+}

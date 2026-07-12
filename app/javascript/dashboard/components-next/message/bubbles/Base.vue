@@ -100,6 +100,9 @@ const replyToPreview = computed(() => {
       messageClass,
       {
         'max-w-lg': variant !== MESSAGE_VARIANTS.EMAIL,
+        'min-w-[120px]':
+          variant !== MESSAGE_VARIANTS.EMAIL &&
+          variant !== MESSAGE_VARIANTS.ACTIVITY,
       },
     ]"
   >

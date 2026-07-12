@@ -158,7 +158,7 @@ export default {
       </transition>
     </router-view>
     <WootSnackbarBox />
-    <NetworkNotification />
+    <!-- <NetworkNotification /> -->
   </div>
   <LoadingState v-else />
 </template>

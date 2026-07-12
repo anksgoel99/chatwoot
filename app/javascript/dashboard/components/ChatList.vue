@@ -72,6 +72,7 @@ const route = useRoute();
 const store = useStore();
 
 const resolveAttributesModalRef = ref(null);
+const searchQuery = ref('');
 
 const activeAssigneeTab = ref(wootConstants.ASSIGNEE_TYPE.ME);
 const activeStatus = ref(wootConstants.STATUS_TYPE.OPEN);
@@ -214,7 +215,7 @@ const userPermissions = computed(() => {
 });
 
 const assigneeTabItems = computed(() => {
-  const tabs = filterItemsByPermission(
+  const baseTabs = filterItemsByPermission(
     ASSIGNEE_TYPE_TAB_PERMISSIONS,
     userPermissions.value,
     item => item.permissions
@@ -229,13 +230,23 @@ const assigneeTabItems = computed(() => {
     c => c.status === 'resolved'
   ).length;
 
-  tabs.push({
+  const resolvedTab = {
     key: 'resolved',
     name: t('CHAT_LIST.ASSIGNEE_TYPE_TABS.resolved') || 'Resolved',
     count: localResolvedCount,
-  });
+  };
 
-  return tabs;
+  const mineTab = baseTabs.find(t => t.key === 'me');
+  const unassignedTab = baseTabs.find(t => t.key === 'unassigned');
+  const allTab = baseTabs.find(t => t.key === 'all');
+
+  const orderedTabs = [];
+  if (resolvedTab) orderedTabs.push(resolvedTab);
+  if (unassignedTab) orderedTabs.push(unassignedTab);
+  if (mineTab) orderedTabs.push(mineTab);
+  if (allTab) orderedTabs.push(allTab);
+
+  return orderedTabs;
 });
 
 const showAssigneeInConversationCard = computed(() => {
@@ -344,7 +355,8 @@ const pageTitle = computed(() => {
   if (hasActiveFolders.value) {
     return activeFolder.value.name;
   }
-  return t('CHAT_LIST.TAB_HEADING');
+  const currentTab = assigneeTabItems.value.find(t => t.key === activeAssigneeTab.value);
+  return currentTab ? currentTab.name : t('CHAT_LIST.TAB_HEADING');
 });
 
 function filterByAssigneeTab(conversations) {
@@ -406,6 +418,21 @@ const conversationList = computed(() => {
       conversation =>
         conversation.meta?.assignee?.id === selectedAgentFilter.value
     );
+  }
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase().trim();
+    localConversationList = localConversationList.filter(conversation => {
+      const contact = getContact.value(conversation.contact_inbox?.contact_id) || {};
+      const contactName = (contact.name || '').toLowerCase();
+      const contactPhone = (contact.phone_number || '').replace(/\D/g, '');
+      const cleanQuery = query.replace(/\D/g, '');
+
+      const matchName = contactName.includes(query);
+      const matchPhone = cleanQuery && contactPhone.includes(cleanQuery);
+
+      return matchName || matchPhone;
+    });
   }
 
   if (
@@ -669,6 +696,7 @@ function updateAssigneeTab(selectedTab) {
   if (activeAssigneeTab.value !== selectedTab) {
     resetBulkActions();
     emitter.emit('clearSearchInput');
+    searchQuery.value = '';
     activeAssigneeTab.value = selectedTab;
     selectedAgentFilter.value = null;
     if (selectedTab === 'resolved') {
@@ -966,19 +994,42 @@ watch(conversationFilters, (newVal, oldVal) => {
       :active-status="activeStatus"
       :is-on-expanded-layout="isOnExpandedLayout"
       :conversation-stats="conversationStats"
-      :is-list-loading="chatListLoading && !conversationList.length"
+      :is-list-loading="chatListLoading"
+      :show-status-filter="activeAssigneeTab !== 'resolved' && activeAssigneeTab !== 'unassigned'"
       @add-folders="onClickOpenAddFoldersModal"
       @delete-folders="onClickOpenDeleteFoldersModal"
       @filters-modal="onToggleAdvanceFiltersModal"
       @reset-filters="resetAndFetchData"
       @basic-filter-change="onBasicFilterChange"
+      @refresh="fetchConversations"
     />
+
+    <!-- Mobile Search Bar -->
+    <div class="px-3 py-2 border-b border-n-weak bg-n-solid-1 shrink-0">
+      <div class="relative flex items-center">
+        <span class="absolute left-3 text-n-slate-11 i-lucide-search size-4" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          :placeholder="t('CHAT_LIST.SEARCH.INPUT')"
+          class="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg border border-n-weak bg-n-surface-1 focus:border-n-brand text-n-slate-12 placeholder-n-slate-11 focus:outline-none"
+        />
+        <button
+          v-if="searchQuery"
+          type="button"
+          class="absolute right-3 text-n-slate-11 hover:text-n-slate-12 cursor-pointer focus:outline-none bg-transparent border-none p-0"
+          @click="searchQuery = ''"
+        >
+          <span class="i-lucide-x size-4" />
+        </button>
+      </div>
+    </div>
 
     <!-- Horizontal scrolling Agent Filter list -->
     <div
       v-if="sortedAgents.length > 0"
       ref="agentScrollContainer"
-      class="flex items-center gap-3 overflow-x-auto px-4 py-2 border-b border-n-weak select-none no-scrollbar shrink-0 bg-n-solid-1 scroll-smooth"
+      class="flex items-center gap-3 overflow-x-auto px-4 py-2 border-b border-n-weak select-none custom-thin-scrollbar shrink-0 bg-n-solid-1 scroll-smooth"
       @wheel="handleAgentScrollWheel"
     >
       <!-- All Agent Filter Button -->
@@ -1138,3 +1189,27 @@ watch(conversationFilters, (newVal, oldVal) => {
     />
   </div>
 </template>
+
+<style lang="scss" scoped>
+.custom-thin-scrollbar {
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 2px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+}
+:deep(.dark) .custom-thin-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+:deep(.dark) .custom-thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+</style>

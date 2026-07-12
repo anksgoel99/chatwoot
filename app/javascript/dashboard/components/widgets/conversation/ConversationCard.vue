@@ -185,13 +185,13 @@ watch(
         v-else-if="lastMessageInChat"
         key="message-preview"
         :message="lastMessageInChat"
-        class="my-0 mx-2 leading-6 h-6 flex-1 min-w-0 text-sm"
+        class="my-0 mx-2 leading-normal flex-1 min-w-0 text-xs mt-0.5"
         :class="messagePreviewClass"
       />
       <p
         v-else
         key="no-messages"
-        class="text-n-slate-11 text-sm my-0 mx-2 leading-6 h-6 flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+        class="text-n-slate-11 text-xs my-0 mx-2 leading-normal flex-1 min-w-0 overflow-hidden text-ellipsis line-clamp-2 mt-0.5"
         :class="messagePreviewClass"
       >
         <fluent-icon
