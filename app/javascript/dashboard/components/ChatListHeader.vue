@@ -24,7 +24,6 @@ const emit = defineEmits([
   'resetFilters',
   'basicFilterChange',
   'filtersModal',
-  'refresh',
 ]);
 
 const { uiSettings, updateUISettings } = useUISettings();
@@ -157,15 +156,6 @@ const toggleConversationLayout = () => {
           :class="{ 'ltr:right-0 rtl:left-0': isOnExpandedLayout }"
         />
       </div>
-      <NextButton
-        v-tooltip.right="'Refresh'"
-        icon="i-lucide-refresh-cw"
-        slate
-        xs
-        faded
-        :class="{ 'animate-spin': isListLoading }"
-        @click="emit('refresh')"
-      />
       <ConversationBasicFilter
         v-if="!hasAppliedFiltersOrActiveFolders"
         :is-on-expanded-layout="isOnExpandedLayout"
