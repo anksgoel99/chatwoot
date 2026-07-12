@@ -157,6 +157,12 @@ export function findSignatureInBody(body, signature) {
     return body.lastIndexOf(cleanedSignature);
   }
 
+  // Support WhatsApp monospace wrapped signatures
+  const wrappedSignature = `\`\`\`${cleanedSignature}\`\`\``;
+  if (trimmedBody.endsWith(wrappedSignature)) {
+    return body.lastIndexOf(wrappedSignature);
+  }
+
   return -1;
 }
 
@@ -196,6 +202,10 @@ export function appendSignature(body, signature, channelType) {
   // if signature is already present, return body
   if (findSignatureInBody(body, cleanedSignature) > -1) {
     return body;
+  }
+
+  if (channelType === 'Channel::Whatsapp') {
+    return `${body.trimEnd()}\n\n${SIGNATURE_DELIMITER}\n\n\`\`\`${cleanedSignature}\`\`\``;
   }
 
   return `${body.trimEnd()}\n\n${appendDelimiter(cleanedSignature)}`;

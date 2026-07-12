@@ -142,11 +142,19 @@ const signature = computed(() => {
   // Search for standard signature delimiter
   const parts = text.split(/\r?\n\r?\n--\r?\n\r?/);
   if (parts.length > 1) {
-    return parts.pop().trim();
+    let sigVal = parts.pop().trim();
+    if (sigVal.startsWith('```') && sigVal.endsWith('```')) {
+      sigVal = sigVal.substring(3, sigVal.length - 3).trim();
+    }
+    return sigVal;
   }
   const index = text.lastIndexOf('\n--\n');
   if (index !== -1) {
-    return text.substring(index + 4).trim();
+    let sigVal = text.substring(index + 4).trim();
+    if (sigVal.startsWith('```') && sigVal.endsWith('```')) {
+      sigVal = sigVal.substring(3, sigVal.length - 3).trim();
+    }
+    return sigVal;
   }
   return '';
 });
