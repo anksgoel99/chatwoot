@@ -1258,6 +1258,7 @@ export default {
     handleMobileFileChange(e) {
       const files = e.target.files;
       if (!files.length) return;
+      this.showMobileActions = false;
       for (let i = 0; i < files.length; i += 1) {
         const file = files[i];
         this.onFileUpload({
@@ -1400,9 +1401,9 @@ export default {
         </button>
       </div>
 
-      <!-- Right Action Button: Microphone (when empty) or Send (when text typed) -->
+      <!-- Right Action Button: Microphone (when empty and no attachments) or Send (when text typed or has attachments) -->
       <button
-        v-if="isMessageEmpty && showAudioRecorder"
+        v-if="isMessageEmpty && !hasAttachments && showAudioRecorder"
         type="button"
         class="flex items-center justify-center w-9 h-9 rounded-full bg-n-alpha-2 text-n-slate-11 shrink-0 cursor-pointer"
         @click="toggleAudioRecorder"
@@ -1757,7 +1758,7 @@ export default {
     </Transition>
 
     <WhatsappTemplates
-      :inbox-id="inbox.id"
+      :inbox-id="inboxId"
       :show="showWhatsAppTemplatesModal"
       @close="hideWhatsappTemplatesModal"
       @on-send="onSendWhatsAppReply"
@@ -1765,7 +1766,7 @@ export default {
     />
 
     <ContentTemplates
-      :inbox-id="inbox.id"
+      :inbox-id="inboxId"
       :show="showContentTemplatesModal"
       @close="hideContentTemplatesModal"
       @on-send="onSendContentTemplateReply"
