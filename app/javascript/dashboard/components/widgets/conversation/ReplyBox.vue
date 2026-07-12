@@ -1,9 +1,10 @@
 <script>
-import { defineAsyncComponent, useTemplateRef } from 'vue';
+import { defineAsyncComponent, useTemplateRef, computed } from 'vue';
 import { mapGetters } from 'vuex';
 import { useAlert } from 'dashboard/composables';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useTrack } from 'dashboard/composables';
+import { useWindowSize } from '@vueuse/core';
 import keyboardEventListenerMixins from 'shared/mixins/keyboardEventListenerMixins';
 
 import ReplyToMessage from './ReplyToMessage.vue';
@@ -95,6 +96,8 @@ export default {
     const messageEditor = useTemplateRef('messageEditor');
     const copilot = useCopilotReply();
     const shortcutKey = useKbd(['$mod', '+', 'enter']);
+    const { width: windowWidth } = useWindowSize();
+    const isMobile = computed(() => windowWidth.value < 768);
 
     return {
       uiSettings,
@@ -106,6 +109,7 @@ export default {
       messageEditor,
       copilot,
       shortcutKey,
+      isMobile,
     };
   },
   data() {
@@ -135,6 +139,7 @@ export default {
       showArticleSearchPopover: false,
       hasRecordedAudio: false,
       copilotAcceptedMessages: {},
+      showMobileActions: false,
     };
   },
   computed: {
@@ -1239,13 +1244,258 @@ export default {
       this.message = acceptedMessage;
       this.setCopilotAcceptedMessage(acceptedMessage);
     },
+    handleMobileFileChange(e) {
+      const files = e.target.files;
+      if (!files.length) return;
+      for (let i = 0; i < files.length; i += 1) {
+        const file = files[i];
+        this.onFileUpload({
+          file: file,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        });
+      }
+      e.target.value = '';
+    },
+    triggerMobileCannedMenu() {
+      this.showMobileActions = false;
+      this.message = '/';
+      this.$nextTick(() => {
+        if (this.messageEditor) {
+          this.messageEditor.focusEditorInputField();
+        }
+      });
+    },
+    toggleReplyType() {
+      if (this.isOnPrivateNote) {
+        this.setReplyMode(REPLY_EDITOR_MODES.REPLY);
+      } else {
+        this.setReplyMode(REPLY_EDITOR_MODES.NOTE);
+      }
+    },
+    onMobileSelectWhatsappTemplate() {
+      this.showMobileActions = false;
+      this.openWhatsappTemplateModal();
+    },
+    onMobileSelectContentTemplate() {
+      this.showMobileActions = false;
+      this.openContentTemplateModal();
+    },
   },
 };
 </script>
 
 <template>
   <ReplyBoxBanner :message="message" :is-on-private-note="isOnPrivateNote" />
-  <div ref="replyEditor" class="reply-box" :class="replyBoxClass">
+
+  <!-- Revamped Mobile Layout -->
+  <div
+    v-if="isMobile"
+    ref="replyEditor"
+    class="reply-box"
+    :class="replyBoxClass"
+  >
+    <!-- Top banner or ReplyEmailHead or Quoted Reply or Attachment Preview (if any) -->
+    <div class="flex flex-col w-full px-3 pt-2">
+      <ReplyToMessage
+        v-if="shouldShowReplyToMessage"
+        :message="inReplyTo"
+        @dismiss="resetReplyToMessage"
+      />
+      <div v-if="hasAttachments" class="mb-2">
+        <AttachmentPreview
+          :attachments="attachedFiles"
+          @remove-attachment="removeAttachment"
+        />
+      </div>
+    </div>
+
+    <!-- Main Input Bar -->
+    <div class="flex items-end gap-2 w-full p-2">
+      <!-- Plus "+" Button -->
+      <button
+        type="button"
+        class="flex items-center justify-center w-9 h-9 rounded-full bg-n-alpha-2 hover:bg-n-alpha-3 text-n-slate-11 shrink-0 cursor-pointer"
+        @click="showMobileActions = !showMobileActions"
+      >
+        <span
+          class="w-5 h-5 i-lucide-plus transition-transform duration-200"
+          :class="{ 'rotate-45': showMobileActions }"
+        />
+      </button>
+
+      <!-- Text Input Field Container -->
+      <div
+        class="flex-grow flex items-center bg-n-alpha-2 rounded-2xl border border-n-weak px-3 py-1"
+      >
+        <WootMessageEditor
+          ref="messageEditor"
+          v-model="message"
+          :conversation-id="conversationId"
+          :editor-id="editorStateId"
+          class="flex-grow text-sm outline-none bg-transparent"
+          :is-private="isOnPrivateNote"
+          :placeholder="messagePlaceHolder"
+          :update-selection-with="updateEditorSelectionWith"
+          :disabled="isEditorDisabled"
+          enable-variables
+          :variables="messageVariables"
+          :signature="messageSignature"
+          allow-signature
+          :channel-type="channelType"
+          :medium="inbox.medium"
+          @typing-off="onTypingOff"
+          @typing-on="onTypingOn"
+          @focus="onFocus"
+          @blur="onBlur"
+          @toggle-user-mention="toggleUserMention"
+          @toggle-canned-menu="toggleCannedMenu"
+          @toggle-variables-menu="toggleVariablesMenu"
+          @clear-selection="clearEditorSelection"
+          @execute-copilot-action="executeCopilotAction"
+        />
+        <!-- Emoji Button inside the text box -->
+        <button
+          type="button"
+          class="text-n-slate-11 hover:text-n-slate-12 ml-1 cursor-pointer"
+          @click="toggleEmojiPicker"
+        >
+          <span class="w-4.5 h-4.5 i-lucide-smile" />
+        </button>
+      </div>
+
+      <!-- Right Action Button: Microphone (when empty) or Send (when text typed) -->
+      <button
+        v-if="isMessageEmpty && showAudioRecorder"
+        type="button"
+        class="flex items-center justify-center w-9 h-9 rounded-full bg-n-alpha-2 text-n-slate-11 shrink-0 cursor-pointer"
+        @click="toggleAudioRecorder"
+      >
+        <span class="w-5 h-5 i-lucide-mic" />
+      </button>
+      <button
+        v-else
+        type="button"
+        class="flex items-center justify-center w-9 h-9 rounded-full bg-n-brand text-white shrink-0 cursor-pointer hover:bg-n-brand/90 transition-colors"
+        :disabled="isReplyButtonDisabled"
+        @click="onSendReply"
+      >
+        <span class="w-4.5 h-4.5 i-lucide-send-horizontal" />
+      </button>
+    </div>
+
+    <!-- Slide-up/Dropdown Mobile Actions Menu -->
+    <div
+      v-if="showMobileActions"
+      class="grid grid-cols-4 gap-3 bg-n-background p-4 border-t border-n-weak rounded-b-xl shadow-inner"
+    >
+      <!-- Media/Photo Upload Button -->
+      <div
+        v-if="showFileUpload"
+        class="flex flex-col items-center justify-center gap-1 cursor-pointer"
+        @click="$refs.mobileFileInput.click()"
+      >
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-2xl bg-n-alpha-2 text-n-slate-12 hover:bg-n-alpha-3"
+        >
+          <span class="w-6 h-6 i-lucide-image" />
+        </div>
+        <span class="text-xs text-n-slate-11">{{
+          $t('CONVERSATION.REPLYBOX.TIP_ATTACH_ICON')
+        }}</span>
+        <input
+          ref="mobileFileInput"
+          type="file"
+          class="hidden"
+          :multiple="enableMultipleFileUpload"
+          @change="handleMobileFileChange"
+        />
+      </div>
+
+      <!-- WhatsApp Template Button -->
+      <div
+        v-if="showWhatsappTemplates"
+        class="flex flex-col items-center justify-center gap-1 cursor-pointer"
+        @click="onMobileSelectWhatsappTemplate"
+      >
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-2xl bg-n-alpha-2 text-n-slate-12 hover:bg-n-alpha-3"
+        >
+          <span class="w-6 h-6 i-lucide-layout-template" />
+        </div>
+        <span class="text-xs text-n-slate-11">{{
+          $t('CONVERSATION.FOOTER.WHATSAPP_TEMPLATES')
+        }}</span>
+      </div>
+
+      <!-- Twilio/Content Template Button -->
+      <div
+        v-if="showContentTemplates"
+        class="flex flex-col items-center justify-center gap-1 cursor-pointer"
+        @click="onMobileSelectContentTemplate"
+      >
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-2xl bg-n-alpha-2 text-n-slate-12 hover:bg-n-alpha-3"
+        >
+          <span class="w-6 h-6 i-lucide-layout-template" />
+        </div>
+        <span class="text-xs text-n-slate-11">{{
+          $t('CONTENT_TEMPLATES.MODAL.TITLE')
+        }}</span>
+      </div>
+
+      <!-- Macros/Canned Button -->
+      <div
+        class="flex flex-col items-center justify-center gap-1 cursor-pointer"
+        @click="triggerMobileCannedMenu"
+      >
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-2xl bg-n-alpha-2 text-n-slate-12 hover:bg-n-alpha-3"
+        >
+          <span class="w-6 h-6 i-lucide-zap" />
+        </div>
+        <span class="text-xs text-n-slate-11">{{
+          $t('CONVERSATION.MACROS')
+        }}</span>
+      </div>
+
+      <!-- Note Toggle (Reply / Private Note) -->
+      <div
+        class="flex flex-col items-center justify-center gap-1 cursor-pointer"
+        @click="toggleReplyType"
+      >
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-2xl bg-n-alpha-2 text-n-slate-12 hover:bg-n-alpha-3"
+          :class="{
+            'bg-amber-100 dark:bg-amber-950/40 text-amber-600': isOnPrivateNote,
+          }"
+        >
+          <span class="w-6 h-6 i-lucide-lock" />
+        </div>
+        <span class="text-xs text-n-slate-11">{{
+          isOnPrivateNote
+            ? $t('CONVERSATION.REPLYBOX.PRIVATE_NOTE')
+            : $t('CONVERSATION.REPLYBOX.REPLY')
+        }}</span>
+      </div>
+    </div>
+
+    <!-- Audio Recorder overlay inside mobile view -->
+    <AudioRecorder
+      v-if="showAudioRecorderEditor"
+      ref="audioRecorderInput"
+      :audio-record-format="audioRecordFormat"
+      @recorder-progress-changed="onRecordProgressChanged"
+      @finish-record="onFinishRecorder"
+      @record-error="onRecordError"
+      @play="recordingAudioState = 'playing'"
+      @pause="recordingAudioState = 'paused'"
+    />
+  </div>
+
+  <!-- Desktop Layout -->
+  <div v-else ref="replyEditor" class="reply-box" :class="replyBoxClass">
     <ReplyTopPanel
       :mode="replyType"
       :conversation-id="conversationId"

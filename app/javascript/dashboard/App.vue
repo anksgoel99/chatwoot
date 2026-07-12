@@ -143,8 +143,7 @@ export default {
   <div
     v-if="!authUIFlags.isFetching"
     id="app"
-    class="flex flex-col w-full h-screen min-h-0 bg-n-background"
-    :class="[isTapifyCompactUI ? 'tapify-compact-ui' : '']"
+    class="flex flex-col w-full h-screen min-h-0 bg-n-background tapify-compact-ui"
     :dir="isRTL ? 'rtl' : 'ltr'"
   >
     <UpdateBanner :latest-chatwoot-version="latestChatwootVersion" />
@@ -158,13 +157,6 @@ export default {
         <component :is="Component" />
       </transition>
     </router-view>
-    <button
-      class="tapify-compact-toggle"
-      type="button"
-      @click="toggleTapifyCompactUI"
-    >
-      {{ isTapifyCompactUI ? 'Standard UI' : 'Compact UI' }}
-    </button>
     <WootSnackbarBox />
     <NetworkNotification />
   </div>
@@ -184,20 +176,6 @@ export default {
 
 .v-popper--theme-tooltip .v-popper__arrow-container {
   display: none;
-}
-.tapify-compact-toggle {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 9999;
-  background: #111827;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 999px;
-  padding: 7px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
 }
 
 .tapify-compact-ui [data-bubble-name='image'] {
