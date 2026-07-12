@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "in.tapify.chatwoot.twa",
+    "sha256_cert_fingerprints": ["3F:41:D0:CA:86:B5:EA:51:08:FB:BD:EE:52:FF:B8:B2:39:30:65:AE:4A:14:F2:A2:48:C1:A5:E7:0C:FB:31:28"]
+  }
+}]
