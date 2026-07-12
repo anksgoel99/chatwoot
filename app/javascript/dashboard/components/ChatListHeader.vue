@@ -62,7 +62,9 @@ const toggleConversationLayout = () => {
       'border-b border-n-strong': hasAppliedFiltersOrActiveFolders,
     }"
   >
-    <div class="flex items-center justify-center min-w-0">
+    <div
+      class="flex items-center justify-center min-w-0 ltr:pl-9 rtl:pr-9 md:ltr:pl-0 md:rtl:pr-0"
+    >
       <h1
         class="text-base font-medium truncate text-n-slate-12"
         :title="pageTitle"

@@ -252,7 +252,7 @@ const onTouchEnd = () => {
         class="flex items-center gap-2 text-white font-medium text-xs"
       >
         <span class="i-lucide-check-circle size-4.5" />
-        <span>{{ $t('CONVERSATION.RESOLVE_ACTION') }}</span>
+        <span>{{ $t('CONVERSATION.HEADER.RESOLVE_ACTION') }}</span>
       </div>
       <div v-else />
 
@@ -268,7 +268,7 @@ const onTouchEnd = () => {
 
     <!-- Slidable Wrapper -->
     <div
-      class="relative z-10 w-full transition-transform duration-100 ease-out"
+      class="relative z-10 w-full transition-transform duration-100 ease-out bg-white dark:bg-n-solid-1"
       :class="{ 'transition-none': isSwiping }"
       :style="{ transform: `translateX(${swipeOffset}px)` }"
     >
