@@ -1063,7 +1063,6 @@ watch(conversationFilters, (newVal, oldVal) => {
 
     <!-- Horizontal scrolling Agent Filter list -->
     <div
-      v-slot="{ showStatusFilter }"
       v-if="agentList && agentList.length > 0 && (activeAssigneeTab === 'all' || activeAssigneeTab === 'resolved')"
       ref="agentScrollContainer"
       class="flex items-center gap-3 overflow-x-auto px-4 py-2 border-b border-n-weak select-none custom-thin-scrollbar shrink-0 bg-n-solid-1 scroll-smooth cursor-grab active:cursor-grabbing"
