@@ -201,3 +201,8 @@ code {
 table {
   @apply border-spacing-0 text-sm w-full;
 }
+
+html,
+body {
+  overscroll-behavior-y: contain;
+}

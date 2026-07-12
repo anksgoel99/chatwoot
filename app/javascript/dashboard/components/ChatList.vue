@@ -966,12 +966,13 @@ watch(conversationFilters, (newVal, oldVal) => {
       :active-status="activeStatus"
       :is-on-expanded-layout="isOnExpandedLayout"
       :conversation-stats="conversationStats"
-      :is-list-loading="chatListLoading && !conversationList.length"
+      :is-list-loading="chatListLoading"
       @add-folders="onClickOpenAddFoldersModal"
       @delete-folders="onClickOpenDeleteFoldersModal"
       @filters-modal="onToggleAdvanceFiltersModal"
       @reset-filters="resetAndFetchData"
       @basic-filter-change="onBasicFilterChange"
+      @refresh="fetchConversations"
     />
 
     <!-- Horizontal scrolling Agent Filter list -->
