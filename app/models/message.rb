@@ -326,6 +326,7 @@ class Message < ApplicationRecord
     reopen_conversation
     mark_pending_conversation_as_open_for_human_response
     set_conversation_activity
+    auto_assign_conversation
     dispatch_create_events
     send_reply
     execute_message_template_hooks
@@ -334,6 +335,15 @@ class Message < ApplicationRecord
 
   def update_contact_activity
     sender.update(last_activity_at: DateTime.now) if sender.is_a?(Contact)
+  end
+
+  def auto_assign_conversation
+    return if conversation.assignee_id.present?
+    return unless sender.is_a?(User)
+    return if incoming?
+    return if content_attributes['automation_rule_id'].present?
+
+    Conversations::AssignmentService.new(conversation: conversation, assignee_id: sender.id).perform
   end
 
   def update_waiting_since
