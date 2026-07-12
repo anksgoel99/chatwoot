@@ -14,15 +14,44 @@ const props = defineProps({
 
 const { variant } = useMessageContext();
 
-const formattedContent = computed(() => {
-  if (variant.value === MESSAGE_VARIANTS.ACTIVITY) {
-    return props.content;
+const parsed = computed(() => {
+  const text = props.content || '';
+  // Search for the standard signature delimiter
+  const parts = text.split(/\r?\n\r?\n--\r?\n\r?/);
+  if (parts.length > 1) {
+    const signature = parts.pop().trim();
+    const body = parts.join('\n\n').trim();
+    return { body, signature };
   }
 
-  return new MessageFormatter(props.content).formattedMessage;
+  // Alternative fallback search for '--'
+  const index = text.lastIndexOf('\n--\n');
+  if (index !== -1) {
+    const body = text.substring(0, index).trim();
+    const signature = text.substring(index + 4).trim();
+    return { body, signature };
+  }
+
+  return { body: text, signature: '' };
+});
+
+const formattedBody = computed(() => {
+  if (variant.value === MESSAGE_VARIANTS.ACTIVITY) {
+    return parsed.value.body;
+  }
+
+  return new MessageFormatter(parsed.value.body).formattedMessage;
 });
 </script>
 
 <template>
-  <span v-dompurify-html="formattedContent" class="prose prose-bubble" />
+  <div class="flex flex-col">
+    <span v-dompurify-html="formattedBody" class="prose prose-bubble" />
+    <div
+      v-if="parsed.signature"
+      class="mt-2 text-xs text-n-slate-11 font-normal leading-normal whitespace-nowrap overflow-hidden text-ellipsis select-none"
+    >
+      {{ parsed.signature }}
+    </div>
+  </div>
 </template>

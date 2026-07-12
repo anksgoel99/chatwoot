@@ -2,7 +2,9 @@
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore } from 'vuex';
-import { useElementSize } from '@vueuse/core';
+import { useElementSize, useWindowSize } from '@vueuse/core';
+import { useUISettings } from 'dashboard/composables/useUISettings';
+import TransferModal from './TransferModal.vue';
 import BackButton from '../BackButton.vue';
 import InboxName from '../InboxName.vue';
 import MoreActions from './MoreActions.vue';
@@ -103,10 +105,53 @@ const copyConversationId = async () => {
     // error
   }
 };
+
+const { uiSettings, updateUISettings } = useUISettings();
+const { width: windowWidth } = useWindowSize();
+const isMobile = computed(() => windowWidth.value < 768);
+
+const showTransferModal = ref(false);
+
+const toggleContactPanel = () => {
+  updateUISettings({
+    is_contact_sidebar_open: !uiSettings.value.is_contact_sidebar_open,
+    is_copilot_panel_open: false,
+  });
+};
+
+const resolveChat = () => {
+  store
+    .dispatch('toggleStatus', {
+      conversationId: props.chat.id,
+      status: 'resolved',
+    })
+    .then(() => {
+      useAlert(t('CONVERSATION.CHANGE_STATUS'));
+    });
+};
+
+const handleSelectAgent = agent => {
+  const agentId = agent ? agent.id : null;
+  store.dispatch('setCurrentChatAssignee', {
+    conversationId: props.chat.id,
+    assignee: agent,
+  });
+  store
+    .dispatch('assignAgent', {
+      conversationId: props.chat.id,
+      agentId,
+    })
+    .then(() => {
+      useAlert(t('CONVERSATION.CHANGE_AGENT'));
+      showTransferModal.value = false;
+    });
+};
 </script>
 
 <template>
+  <!-- Desktop Layout -->
   <div
+    v-if="!isMobile"
     ref="conversationHeader"
     class="flex flex-col gap-3 items-center justify-between flex-1 w-full min-w-0 xl:flex-row px-3 pt-3 pb-2 h-24 xl:h-12"
   >
@@ -175,5 +220,73 @@ const copyConversationId = async () => {
       <ConversationCallButton :inbox="inbox" :chat="currentChat" />
       <MoreActions :conversation-id="currentChat.id" />
     </div>
+  </div>
+
+  <!-- Mobile Layout -->
+  <div
+    v-else
+    ref="conversationHeader"
+    class="flex flex-col w-full bg-n-solid-1 border-b border-n-weak select-none"
+  >
+    <!-- Top Bar: Back Button, Avatar, Name & View Profile link -->
+    <div class="flex items-center justify-between w-full px-3 py-2.5">
+      <div class="flex items-center min-w-0">
+        <BackButton
+          v-if="showBackButton"
+          :back-url="backButtonUrl"
+          class="ltr:mr-2 rtl:ml-2"
+        />
+        <Avatar
+          :name="currentContact.name"
+          :src="currentContact.thumbnail"
+          :size="32"
+          :status="currentContact.availability_status"
+          hide-offline-status
+          class="shrink-0"
+        />
+        <div class="flex flex-col ml-2 overflow-hidden">
+          <span
+            class="text-sm font-semibold truncate leading-tight text-n-slate-12"
+          >
+            {{ currentContact.name }}
+          </span>
+          <button
+            type="button"
+            class="text-xs text-n-brand text-left cursor-pointer hover:underline bg-transparent border-none p-0 w-max"
+            @click="toggleContactPanel"
+          >
+            {{ $t('CONVERSATION.HEADER.VIEW_PROFILE') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Buttons: Transfer & Resolve -->
+      <div class="flex items-center gap-3">
+        <!-- Transfer Button -->
+        <button
+          type="button"
+          class="text-sm font-semibold text-n-brand cursor-pointer bg-transparent border-none p-1"
+          @click="showTransferModal = true"
+        >
+          {{ $t('CONVERSATION.HEADER.TRANSFER') }}
+        </button>
+
+        <!-- Resolve Button -->
+        <button
+          type="button"
+          class="text-sm font-semibold bg-n-alpha-2 hover:bg-n-alpha-3 text-n-slate-12 px-3 py-1.5 rounded-lg border-none cursor-pointer"
+          @click="resolveChat"
+        >
+          {{ $t('CONVERSATION.HEADER.RESOLVE_ACTION') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Transfer Modal Sheet -->
+    <TransferModal
+      :show="showTransferModal"
+      @close="showTransferModal = false"
+      @select-agent="handleSelectAgent"
+    />
   </div>
 </template>

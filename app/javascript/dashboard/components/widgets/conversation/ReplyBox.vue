@@ -1294,6 +1294,12 @@ export default {
       this.showMobileActions = false;
       this.openContentTemplateModal();
     },
+    onMobileSendAudioRecord() {
+      if (this.$refs.audioRecorderInput) {
+        this.$refs.audioRecorderInput.stopRecording();
+      }
+      this.isRecordingAudio = false;
+    },
   },
 };
 </script>
@@ -1324,7 +1330,10 @@ export default {
     </div>
 
     <!-- Main Input Bar -->
-    <div class="flex items-end gap-2 w-full p-2">
+    <div
+      v-if="!showAudioRecorderEditor"
+      class="flex items-end gap-2 w-full p-2"
+    >
       <!-- Plus "+" Button -->
       <button
         type="button"
@@ -1377,14 +1386,6 @@ export default {
           @clear-selection="clearEditorSelection"
           @execute-copilot-action="executeCopilotAction"
         />
-        <!-- Emoji Button inside the text box -->
-        <button
-          type="button"
-          class="text-n-slate-11 hover:text-n-slate-12 ml-1 cursor-pointer shrink-0"
-          @click="toggleEmojiPicker"
-        >
-          <span class="w-4.5 h-4.5 i-lucide-smile" />
-        </button>
         <!-- Lock Button inside the text box to toggle Reply Type -->
         <button
           type="button"
@@ -1416,6 +1417,40 @@ export default {
         class="flex items-center justify-center w-9 h-9 rounded-full bg-n-brand text-white shrink-0 cursor-pointer hover:bg-n-brand/90 transition-colors"
         :disabled="isReplyButtonDisabled"
         @click="onSendReply"
+      >
+        <span class="w-4.5 h-4.5 i-lucide-send-horizontal" />
+      </button>
+    </div>
+
+    <!-- Audio Recording Control Bar for Mobile -->
+    <div
+      v-else
+      class="flex items-center justify-between gap-4 w-full p-2 bg-n-solid-1 border-t border-n-weak"
+    >
+      <!-- Discard/Delete Button -->
+      <button
+        type="button"
+        class="flex items-center justify-center w-9 h-9 rounded-full bg-red-50 text-red-500 shrink-0 cursor-pointer hover:bg-red-100 transition-colors"
+        @click="toggleAudioRecorder"
+      >
+        <span class="w-5 h-5 i-lucide-trash-2" />
+      </button>
+
+      <!-- Pulse Dot and Duration -->
+      <div
+        class="flex-1 flex items-center gap-2 justify-center bg-n-alpha-1 py-1.5 px-3 rounded-2xl border border-n-weak"
+      >
+        <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+        <span class="text-sm font-semibold text-n-slate-12">
+          {{ recordingAudioDurationText || '00:00' }}
+        </span>
+      </div>
+
+      <!-- Send/Stop Button -->
+      <button
+        type="button"
+        class="flex items-center justify-center w-9 h-9 rounded-full bg-n-brand text-white shrink-0 cursor-pointer hover:bg-n-brand/90 transition-colors"
+        @click="onMobileSendAudioRecord"
       >
         <span class="w-4.5 h-4.5 i-lucide-send-horizontal" />
       </button>
@@ -1756,29 +1791,29 @@ export default {
         @toggle-quoted-reply="toggleQuotedReply"
       />
     </Transition>
-
-    <WhatsappTemplates
-      :inbox-id="inboxId"
-      :show="showWhatsAppTemplatesModal"
-      @close="hideWhatsappTemplatesModal"
-      @on-send="onSendWhatsAppReply"
-      @cancel="hideWhatsappTemplatesModal"
-    />
-
-    <ContentTemplates
-      :inbox-id="inboxId"
-      :show="showContentTemplatesModal"
-      @close="hideContentTemplatesModal"
-      @on-send="onSendContentTemplateReply"
-      @cancel="hideContentTemplatesModal"
-    />
-
-    <woot-confirm-modal
-      ref="confirmDialog"
-      :title="$t('CONVERSATION.REPLYBOX.UNDEFINED_VARIABLES.TITLE')"
-      :description="undefinedVariableMessage"
-    />
   </div>
+
+  <WhatsappTemplates
+    v-model:show="showWhatsAppTemplatesModal"
+    :inbox-id="inboxId"
+    @close="hideWhatsappTemplatesModal"
+    @on-send="onSendWhatsAppReply"
+    @cancel="hideWhatsappTemplatesModal"
+  />
+
+  <ContentTemplates
+    v-model:show="showContentTemplatesModal"
+    :inbox-id="inboxId"
+    @close="hideContentTemplatesModal"
+    @on-send="onSendContentTemplateReply"
+    @cancel="hideContentTemplatesModal"
+  />
+
+  <woot-confirm-modal
+    ref="confirmDialog"
+    :title="$t('CONVERSATION.REPLYBOX.UNDEFINED_VARIABLES.TITLE')"
+    :description="undefinedVariableMessage"
+  />
 </template>
 
 <style lang="scss" scoped>
