@@ -47,6 +47,7 @@ const voiceCallData = computed(() => {
 });
 
 const unreadCount = computed(() => props.chat.unread_count);
+const hasUnread = computed(() => unreadCount.value > 0);
 
 const slaCardLabel = useTemplateRef('slaCardLabel');
 
@@ -151,7 +152,8 @@ const selectedModel = computed({
       />
 
       <h4
-        class="text-heading-3 my-0 capitalize truncate text-n-slate-12 font-medium w-32 flex-shrink-0"
+        class="text-heading-3 my-0 capitalize truncate text-n-slate-12 w-32 flex-shrink-0"
+        :class="hasUnread ? 'font-bold' : 'font-medium'"
       >
         {{ currentContact.name }}
       </h4>
