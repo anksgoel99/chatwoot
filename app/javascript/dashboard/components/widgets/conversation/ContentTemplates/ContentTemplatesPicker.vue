@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAlert } from 'dashboard/composables';
 import { useStore } from 'dashboard/composables/store';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
@@ -51,13 +51,18 @@ const refreshTemplates = async () => {
   isRefreshing.value = true;
   try {
     await store.dispatch('inboxes/syncTemplates', props.inboxId);
-    useAlert(t('CONTENT_TEMPLATES.PICKER.REFRESH_SUCCESS'));
   } catch (error) {
     useAlert(t('CONTENT_TEMPLATES.PICKER.REFRESH_ERROR'));
   } finally {
     isRefreshing.value = false;
   }
 };
+
+onMounted(() => {
+  if (!twilioTemplates.value || !twilioTemplates.value.length) {
+    refreshTemplates();
+  }
+});
 </script>
 
 <template>

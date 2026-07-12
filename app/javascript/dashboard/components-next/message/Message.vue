@@ -507,6 +507,60 @@ const setupHighlightTimer = () => {
 
 onMounted(setupHighlightTimer);
 
+const touchStartX = ref(0);
+const touchStartY = ref(0);
+const swipeDistance = ref(0);
+const isSwiping = ref(false);
+
+const handleTouchStart = e => {
+  if (props.variant === MESSAGE_VARIANTS.ACTIVITY) return;
+  touchStartX.value = e.touches[0].clientX;
+  touchStartY.value = e.touches[0].clientY;
+  isSwiping.value = false;
+  swipeDistance.value = 0;
+};
+
+const handleTouchMove = e => {
+  if (props.variant === MESSAGE_VARIANTS.ACTIVITY) return;
+  const currentX = e.touches[0].clientX;
+  const currentY = e.touches[0].clientY;
+  const diffX = currentX - touchStartX.value;
+  const diffY = currentY - touchStartY.value;
+
+  // Only track swipe if swiping right (from left to right)
+  if (diffX > 0) {
+    if (
+      !isSwiping.value &&
+      Math.abs(diffX) > Math.abs(diffY) * 1.5 &&
+      Math.abs(diffX) > 10
+    ) {
+      isSwiping.value = true;
+    }
+
+    if (isSwiping.value) {
+      if (e.cancelable) e.preventDefault();
+      swipeDistance.value = Math.min(diffX, 80);
+    }
+  }
+};
+
+const handleTouchEnd = () => {
+  if (isSwiping.value) {
+    if (swipeDistance.value >= 60) {
+      handleReplyTo();
+    }
+    isSwiping.value = false;
+    swipeDistance.value = 0;
+  }
+};
+
+const swipeStyle = computed(() => {
+  return {
+    transform: `translateX(${swipeDistance.value}px)`,
+    transition: isSwiping.value ? 'none' : 'transform 0.2s ease-out',
+  };
+});
+
 provideMessageContext({
   ...toRefs(props),
   isPrivate: computed(() => props.private),
@@ -557,13 +611,28 @@ provideMessageContext({
         <Avatar v-bind="avatarInfo" :size="24" />
       </div>
       <div
-        class="[grid-area:bubble] flex min-w-0"
+        class="[grid-area:bubble] flex min-w-0 relative"
         :class="{
           'ltr:ml-8 rtl:mr-8 justify-end': orientation === ORIENTATION.RIGHT,
           'ltr:mr-8 rtl:ml-8': orientation === ORIENTATION.LEFT,
         }"
+        :style="swipeStyle"
         @contextmenu="openContextMenu($event)"
+        @touchstart="handleTouchStart"
+        @touchmove="handleTouchMove"
+        @touchend="handleTouchEnd"
       >
+        <!-- Swipe reply icon indicator -->
+        <div
+          v-if="swipeDistance > 0"
+          class="absolute ltr:-left-8 rtl:-right-8 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 rounded-full bg-n-alpha-2 text-n-brand transition-all duration-75"
+          :style="{
+            opacity: swipeDistance / 60,
+            transform: `translateY(-50%) scale(${Math.min(swipeDistance / 60, 1.2)})`,
+          }"
+        >
+          <span class="w-4.5 h-4.5 i-lucide-reply" />
+        </div>
         <Component :is="componentToRender" />
       </div>
       <MessageError

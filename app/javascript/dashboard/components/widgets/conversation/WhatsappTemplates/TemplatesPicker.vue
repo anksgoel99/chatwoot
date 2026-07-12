@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, toRef } from 'vue';
+import { ref, computed, toRef, onMounted } from 'vue';
 import { useAlert } from 'dashboard/composables';
 import { useFunctionGetter, useStore } from 'dashboard/composables/store';
 import {
@@ -60,13 +60,21 @@ const refreshTemplates = async () => {
   isRefreshing.value = true;
   try {
     await store.dispatch('inboxes/syncTemplates', props.inboxId);
-    useAlert(t('WHATSAPP_TEMPLATES.PICKER.REFRESH_SUCCESS'));
   } catch (error) {
     useAlert(t('WHATSAPP_TEMPLATES.PICKER.REFRESH_ERROR'));
   } finally {
     isRefreshing.value = false;
   }
 };
+
+onMounted(() => {
+  if (
+    !whatsAppTemplateMessages.value ||
+    !whatsAppTemplateMessages.value.length
+  ) {
+    refreshTemplates();
+  }
+});
 </script>
 
 <template>
