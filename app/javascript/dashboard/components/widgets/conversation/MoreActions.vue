@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onUnmounted } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import { useToggle } from '@vueuse/core';
 import { useStore } from 'vuex';
 import { useAlert } from 'dashboard/composables';
@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n';
 import { emitter } from 'shared/helpers/mitt';
 import EmailTranscriptModal from './EmailTranscriptModal.vue';
 import ResolveAction from '../../buttons/ResolveAction.vue';
+import TransferModal from './TransferModal.vue';
 import ButtonV4 from 'dashboard/components-next/button/Button.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 
@@ -18,6 +19,25 @@ import {
 
 // No props needed as we're getting currentChat from the store directly
 const store = useStore();
+
+const showTransferModal = ref(false);
+
+const handleSelectAgent = agent => {
+  const agentId = agent ? agent.id : null;
+  store.dispatch('setCurrentChatAssignee', {
+    conversationId: currentChat.value.id,
+    assignee: agent,
+  });
+  store
+    .dispatch('assignAgent', {
+      conversationId: currentChat.value.id,
+      agentId,
+    })
+    .then(() => {
+      useAlert(t('CONVERSATION.CHANGE_AGENT'));
+      showTransferModal.value = false;
+    });
+};
 const { t } = useI18n();
 
 const [showEmailActionsModal, toggleEmailModal] = useToggle(false);
@@ -92,6 +112,15 @@ onUnmounted(() => {
 
 <template>
   <div class="relative flex items-center gap-2 actions--container">
+    <ButtonV4
+      size="sm"
+      variant="ghost"
+      color="slate"
+      icon="i-lucide-user-plus"
+      v-tooltip="t('CONVERSATION.HEADER.TRANSFER')"
+      class="rounded-md hover:bg-n-alpha-2"
+      @click="showTransferModal = true"
+    />
     <ResolveAction
       :conversation-id="currentChat.id"
       :status="currentChat.status"
@@ -121,6 +150,12 @@ onUnmounted(() => {
       :show="showEmailActionsModal"
       :current-chat="currentChat"
       @cancel="toggleEmailModal"
+    />
+    <TransferModal
+      v-if="showTransferModal"
+      :show="showTransferModal"
+      @close="showTransferModal = false"
+      @select-agent="handleSelectAgent"
     />
   </div>
 </template>
