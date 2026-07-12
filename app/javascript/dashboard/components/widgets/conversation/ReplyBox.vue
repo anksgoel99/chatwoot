@@ -1013,6 +1013,14 @@ export default {
     },
     onFocus() {
       this.isFocused = true;
+      if (this.isMobile) {
+        setTimeout(() => {
+          this.$refs.replyEditor?.scrollIntoView({
+            block: 'nearest',
+            behavior: 'smooth',
+          });
+        }, 150);
+      }
     },
     onRecordProgressChanged(duration) {
       this.recordingAudioDurationText = duration;
@@ -1505,7 +1513,7 @@ export default {
           <span class="w-4.5 h-4.5 i-lucide-layout-template" />
         </span>
         <span class="text-sm font-medium text-n-slate-12">{{
-          $t('CONVERSATION.FOOTER.WHATSAPP_TEMPLATES')
+          $t('CONVERSATION.REPLYBOX.WA_TEMPLATES')
         }}</span>
       </button>
 
@@ -1538,7 +1546,7 @@ export default {
           <span class="w-4.5 h-4.5 i-lucide-zap" />
         </span>
         <span class="text-sm font-medium text-n-slate-12">{{
-          $t('CONVERSATION.ACCORDION.MACROS')
+          $t('CONVERSATION.REPLYBOX.MACROS')
         }}</span>
       </button>
     </div>

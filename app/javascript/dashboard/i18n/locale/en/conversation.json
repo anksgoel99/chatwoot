@@ -231,6 +231,8 @@
       "PHOTOS": "Photos",
       "CAMERA": "Camera",
       "ATTACH_FILE": "Attach File",
+      "MACROS": "Macros",
+      "WA_TEMPLATES": "WA Templates",
       "TIP_AUDIORECORDER_ICON": "Record audio",
       "TIP_AUDIORECORDER_PERMISSION": "Allow access to audio",
       "TIP_AUDIORECORDER_ERROR": "Could not open the audio",
