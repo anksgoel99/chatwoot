@@ -122,8 +122,14 @@ const getAgentOpenCount = agentId => {
   ).length;
 };
 
+const agentSearchQuery = ref('');
+
 const sortedAgents = computed(() => {
-  const list = [...(agentList.value || [])];
+  let list = [...(agentList.value || [])];
+  if (agentSearchQuery.value) {
+    const q = agentSearchQuery.value.toLowerCase().trim();
+    list = list.filter(agent => agent.name.toLowerCase().includes(q));
+  }
   return list.sort((a, b) => {
     const aOnline = a.availability_status === 'online';
     const bOnline = b.availability_status === 'online';
@@ -1027,7 +1033,7 @@ watch(conversationFilters, (newVal, oldVal) => {
 
     <!-- Horizontal scrolling Agent Filter list -->
     <div
-      v-if="sortedAgents.length > 0"
+      v-if="agentList && agentList.length > 0"
       ref="agentScrollContainer"
       class="flex items-center gap-3 overflow-x-auto px-4 py-2 border-b border-n-weak select-none custom-thin-scrollbar shrink-0 bg-n-solid-1 scroll-smooth"
       @wheel="handleAgentScrollWheel"
@@ -1059,6 +1065,29 @@ watch(conversationFilters, (newVal, oldVal) => {
           {{ $t('CHAT_LIST.ALL_AGENTS_TEXT') }}
         </span>
       </button>
+
+      <!-- Agent Filter Search Input -->
+      <div class="flex flex-col items-center shrink-0 w-24">
+        <div class="relative flex items-center h-10">
+          <input
+            v-model="agentSearchQuery"
+            type="text"
+            placeholder="Search Agent"
+            class="w-full px-2 py-1 text-[10px] rounded-lg border border-n-weak bg-n-surface-1 focus:border-n-brand text-n-slate-12 placeholder-n-slate-11 focus:outline-none"
+          />
+          <button
+            v-if="agentSearchQuery"
+            type="button"
+            class="absolute right-1.5 text-n-slate-11 hover:text-n-slate-12 cursor-pointer focus:outline-none bg-transparent border-none p-0"
+            @click="agentSearchQuery = ''"
+          >
+            <span class="i-lucide-x size-3" />
+          </button>
+        </div>
+        <span class="text-[9px] text-n-slate-11 leading-none mt-0.5 whitespace-nowrap">
+          Filter List
+        </span>
+      </div>
 
       <!-- Active Individual Agents -->
       <button
