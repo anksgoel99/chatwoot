@@ -1037,6 +1037,23 @@ const menuItems = computed(() => {
         class="absolute top-0 h-full w-px ltr:right-0 rtl:left-0 bg-transparent group-hover:bg-n-brand transition-colors"
         :class="{ 'bg-n-brand': isResizing }"
       />
+      <!-- Sidebar Toggle Button -->
+      <button
+        type="button"
+        class="absolute top-1/2 -translate-y-1/2 z-50 flex items-center justify-center w-5 h-5 rounded-full border border-n-weak bg-n-background shadow-md hover:bg-n-alpha-3 cursor-pointer ltr:-right-2.5 rtl:-left-2.5"
+        @click.stop="onResizeHandleDoubleClick"
+        @mousedown.stop
+        @touchstart.stop
+      >
+        <span
+          class="w-3.5 h-3.5 text-n-slate-11"
+          :class="
+            isEffectivelyCollapsed
+              ? 'i-lucide-chevron-right'
+              : 'i-lucide-chevron-left'
+          "
+        />
+      </button>
     </div>
   </aside>
 </template>

@@ -984,12 +984,15 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
 
 .ProseMirror-woot-style {
   @apply overflow-auto;
+  transition:
+    min-height 120ms ease,
+    max-height 120ms ease;
 }
 
 .ProseMirror-woot-style:not(
     :where(.resizable-editor-wrapper .ProseMirror-woot-style)
   ) {
-  @apply min-h-[5rem] max-h-[7.5rem];
+  @apply min-h-[2.25rem] max-h-[7.5rem];
 }
 
 // Resizable editor wrapper styles

@@ -55,6 +55,7 @@ const currentChat = useMapGetter('getSelectedChat');
 const inboxesList = useMapGetter('inboxes/getInboxes');
 const activeInbox = useMapGetter('getSelectedInbox');
 const accountId = useMapGetter('getCurrentAccountId');
+const currentUser = useMapGetter('getCurrentUser');
 
 const chatMetadata = computed(() => props.source.meta || {});
 const assignee = computed(() => chatMetadata.value.assignee || {});
@@ -176,43 +177,137 @@ const onDeleteConversation = () => {
   deleteConversation(props.source.id);
   closeContextMenu();
 };
+
+const swipeOffset = ref(0);
+const isSwiping = ref(false);
+let startTouchX = 0;
+let startTouchY = 0;
+let isHorizontalSwipe = false;
+
+const onTouchStart = e => {
+  startTouchX = e.touches[0].clientX;
+  startTouchY = e.touches[0].clientY;
+  isSwiping.value = true;
+  isHorizontalSwipe = false;
+};
+
+const onTouchMove = e => {
+  if (!isSwiping.value) return;
+
+  const currentX = e.touches[0].clientX;
+  const currentY = e.touches[0].clientY;
+  const deltaX = currentX - startTouchX;
+  const deltaY = currentY - startTouchY;
+
+  if (
+    !isHorizontalSwipe &&
+    Math.abs(deltaX) > 10 &&
+    Math.abs(deltaX) > Math.abs(deltaY)
+  ) {
+    isHorizontalSwipe = true;
+  }
+
+  if (isHorizontalSwipe) {
+    if (e.cancelable) e.preventDefault();
+    if (deltaX > 0) {
+      swipeOffset.value = Math.min(deltaX * 0.8, 120);
+    } else {
+      swipeOffset.value = Math.max(deltaX * 0.8, -140);
+    }
+  }
+};
+
+const onTouchEnd = () => {
+  if (!isSwiping.value) return;
+  isSwiping.value = false;
+
+  const finalOffset = swipeOffset.value;
+  swipeOffset.value = 0;
+
+  if (isHorizontalSwipe) {
+    if (finalOffset > 85) {
+      onUpdateConversation('resolved');
+    } else if (finalOffset < -95) {
+      onAssignAgent(currentUser.value);
+    }
+  }
+};
 </script>
 
 <template>
-  <!-- Expanded layout: wide screen + expanded setting -->
-  <ConversationCardExpanded
-    v-if="showExpanded"
-    :chat="source"
-    :current-contact="currentContact"
-    :assignee="assignee"
-    :inbox="inbox"
-    :selected="isConversationSelected(source.id)"
-    :is-active-chat="isActiveChat"
-    :show-assignee="showAssigneeForExpandedCard"
-    :show-inbox-name="showInboxName"
-    :is-inbox-view="isInboxView"
-    @select-conversation="onExpandedSelect"
-    @de-select-conversation="onExpandedSelect"
-    @click="onCardClick"
-    @contextmenu="openContextMenu"
-  />
+  <div
+    class="relative overflow-hidden w-full select-none touch-pan-y"
+    @touchstart="onTouchStart"
+    @touchmove="onTouchMove"
+    @touchend="onTouchEnd"
+  >
+    <!-- Swipe Actions Underlay -->
+    <div
+      v-if="swipeOffset !== 0"
+      class="absolute inset-0 z-0 flex items-center justify-between px-6 transition-colors duration-150"
+      :class="swipeOffset > 0 ? 'bg-n-brand/80' : 'bg-n-violet-9/80'"
+    >
+      <div
+        v-if="swipeOffset > 0"
+        class="flex items-center gap-2 text-white font-medium text-xs"
+      >
+        <span class="i-lucide-check-circle size-4.5" />
+        <span>{{ $t('CONVERSATION.RESOLVE_ACTION') }}</span>
+      </div>
+      <div v-else />
 
-  <!-- Default (condensed) layout -->
-  <ConversationCard
-    v-else
-    :chat="source"
-    :current-contact="currentContact"
-    :assignee="assignee"
-    :inbox="inbox"
-    :selected="isConversationSelected(source.id)"
-    :is-active-chat="isActiveChat"
-    :show-assignee="showAssignee"
-    :show-inbox-name="showInboxName"
-    @click="onCardClick"
-    @contextmenu="openContextMenu"
-    @select-conversation="selectConversation"
-    @de-select-conversation="deSelectConversation"
-  />
+      <div
+        v-if="swipeOffset < 0"
+        class="flex items-center gap-2 text-white font-medium text-xs"
+      >
+        <span>{{ $t('CONVERSATION.ASSIGN_TO_ME') }}</span>
+        <span class="i-lucide-user-round-check size-4.5" />
+      </div>
+      <div v-else />
+    </div>
+
+    <!-- Slidable Wrapper -->
+    <div
+      class="relative z-10 w-full transition-transform duration-100 ease-out"
+      :class="{ 'transition-none': isSwiping }"
+      :style="{ transform: `translateX(${swipeOffset}px)` }"
+    >
+      <!-- Expanded layout: wide screen + expanded setting -->
+      <ConversationCardExpanded
+        v-if="showExpanded"
+        :chat="source"
+        :current-contact="currentContact"
+        :assignee="assignee"
+        :inbox="inbox"
+        :selected="isConversationSelected(source.id)"
+        :is-active-chat="isActiveChat"
+        :show-assignee="showAssigneeForExpandedCard"
+        :show-inbox-name="showInboxName"
+        :is-inbox-view="isInboxView"
+        @select-conversation="onExpandedSelect"
+        @de-select-conversation="onExpandedSelect"
+        @click="onCardClick"
+        @contextmenu="openContextMenu"
+      />
+
+      <!-- Default (condensed) layout -->
+      <ConversationCard
+        v-else
+        :chat="source"
+        :current-contact="currentContact"
+        :assignee="assignee"
+        :inbox="inbox"
+        :selected="isConversationSelected(source.id)"
+        :is-active-chat="isActiveChat"
+        :show-assignee="showAssignee"
+        :show-inbox-name="showInboxName"
+        @click="onCardClick"
+        @contextmenu="openContextMenu"
+        @select-conversation="selectConversation"
+        @de-select-conversation="deSelectConversation"
+      />
+    </div>
+  </div>
 
   <!-- Shared context menu for both layouts -->
   <ContextMenu

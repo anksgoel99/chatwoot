@@ -41,7 +41,7 @@ export default {
   setup() {
     const upgradePageRef = ref(null);
     const { uiSettings, updateUISettings } = useUISettings();
-    const { accountId } = useAccount();
+    const { accountId, accountScopedRoute } = useAccount();
     const { width: windowWidth } = useWindowSize();
     const callsStore = useCallsStore();
 
@@ -49,6 +49,7 @@ export default {
       uiSettings,
       updateUISettings,
       accountId,
+      accountScopedRoute,
       upgradePageRef,
       windowWidth,
       hasActiveCall: computed(() => callsStore.hasActiveCall),
@@ -142,6 +143,7 @@ export default {
 
     <main
       class="flex flex-1 h-full w-full min-h-0 px-0 overflow-hidden bg-n-surface-1"
+      :class="{ 'pb-14': isSmallScreen }"
     >
       <UpgradePage
         v-show="showUpgradePage"
@@ -174,5 +176,36 @@ export default {
         @clickaway="closeKeyShortcutModal"
       />
     </main>
+
+    <!-- Mobile Bottom Navigation Tab Bar -->
+    <div
+      v-if="isSmallScreen"
+      class="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around h-14 bg-n-background/90 backdrop-blur-md border-t border-n-weak pb-safe-bottom"
+    >
+      <RouterLink
+        :to="accountScopedRoute('home')"
+        class="flex flex-col items-center justify-center flex-grow text-center text-xs h-full text-n-slate-11 hover:text-n-slate-12 transition-colors duration-150"
+        active-class="!text-n-brand"
+      >
+        <span class="i-lucide-message-circle size-5 mb-0.5" />
+        <span>{{ $t('SIDEBAR.CONVERSATIONS') }}</span>
+      </RouterLink>
+      <RouterLink
+        :to="accountScopedRoute('contacts_dashboard_index')"
+        class="flex flex-col items-center justify-center flex-grow text-center text-xs h-full text-n-slate-11 hover:text-n-slate-12 transition-colors duration-150"
+        active-class="!text-n-brand"
+      >
+        <span class="i-lucide-contact size-5 mb-0.5" />
+        <span>{{ $t('SIDEBAR.CONTACTS') }}</span>
+      </RouterLink>
+      <RouterLink
+        :to="accountScopedRoute('general_settings_index')"
+        class="flex flex-col items-center justify-center flex-grow text-center text-xs h-full text-n-slate-11 hover:text-n-slate-12 transition-colors duration-150"
+        active-class="!text-n-brand"
+      >
+        <span class="i-lucide-bolt size-5 mb-0.5" />
+        <span>{{ $t('SIDEBAR.SETTINGS') }}</span>
+      </RouterLink>
+    </div>
   </div>
 </template>
