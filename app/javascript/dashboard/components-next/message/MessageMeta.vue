@@ -1,5 +1,11 @@
+<script>
+export default {
+  inheritAttrs: false,
+};
+</script>
+
 <script setup>
-import { computed } from 'vue';
+import { computed, useAttrs } from 'vue';
 import { messageTimestamp } from 'shared/helpers/timeHelper';
 
 import MessageStatus from './MessageStatus.vue';
@@ -30,6 +36,7 @@ const {
   sourceId,
   messageType,
   contentAttributes,
+  content,
 } = useMessageContext();
 
 const readableTime = computed(() =>
@@ -129,15 +136,54 @@ const statusToShow = computed(() => {
 
   return MESSAGE_STATUS.PROGRESS;
 });
+
+const signature = computed(() => {
+  const text = content.value || '';
+  // Search for standard signature delimiter
+  const parts = text.split(/\r?\n\r?\n--\r?\n\r?/);
+  if (parts.length > 1) {
+    return parts.pop().trim();
+  }
+  const index = text.lastIndexOf('\n--\n');
+  if (index !== -1) {
+    return text.substring(index + 4).trim();
+  }
+  return '';
+});
+
+const attrs = useAttrs();
+const cleanClasses = computed(() => {
+  const originalClass = attrs.class || '';
+  if (signature.value) {
+    // Remove any justify- classes to avoid conflicts
+    return originalClass
+      .split(' ')
+      .filter(c => !c.startsWith('justify-'))
+      .join(' ');
+  }
+  return originalClass;
+});
 </script>
 
 <template>
-  <div class="text-xs flex items-center gap-1.5">
-    <div class="inline">
-      <time class="inline">{{ readableTime }}</time>
+  <div
+    v-bind="attrs"
+    class="text-xs flex items-center mt-2 w-full select-none"
+    :class="[cleanClasses, signature ? 'justify-between' : 'gap-1.5']"
+    :style="attrs.style"
+  >
+    <div
+      v-if="signature"
+      class="text-[11px] text-n-slate-11 font-normal leading-normal whitespace-nowrap overflow-hidden text-ellipsis pr-4 max-w-[65%]"
+    >
+      {{ signature }}
     </div>
-    <Icon v-if="isPrivate" icon="i-lucide-lock-keyhole" class="size-3" />
-    <MessageStatus v-if="showStatusIndicator" :status="statusToShow" />
+    <div class="flex items-center gap-1.5 shrink-0">
+      <div class="inline">
+        <time class="inline">{{ readableTime }}</time>
+      </div>
+      <Icon v-if="isPrivate" icon="i-lucide-lock-keyhole" class="size-3" />
+      <MessageStatus v-if="showStatusIndicator" :status="statusToShow" />
+    </div>
   </div>
 </template>
-`

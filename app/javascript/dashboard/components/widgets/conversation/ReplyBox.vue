@@ -140,6 +140,7 @@ export default {
       hasRecordedAudio: false,
       copilotAcceptedMessages: {},
       showMobileActions: false,
+      sendAudioImmediately: false,
     };
   },
   computed: {
@@ -1034,6 +1035,11 @@ export default {
         ...file,
         isVoiceMessage: true,
       };
+
+      if (this.isMobile) {
+        this.sendAudioImmediately = true;
+      }
+
       return file && this.onFileUpload(autoRecordedFile);
     },
     onRecordError() {
@@ -1068,6 +1074,13 @@ export default {
           blobSignedId: blob ? blob.signed_id : undefined,
           isVoiceMessage: file?.isVoiceMessage || false,
         });
+
+        if (this.sendAudioImmediately) {
+          this.sendAudioImmediately = false;
+          this.$nextTick(() => {
+            this.onSendReply();
+          });
+        }
       };
     },
     removeAttachment(attachments) {
@@ -1298,7 +1311,6 @@ export default {
       if (this.$refs.audioRecorderInput) {
         this.$refs.audioRecorderInput.stopRecording();
       }
-      this.isRecordingAudio = false;
     },
   },
 };

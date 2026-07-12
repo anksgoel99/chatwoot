@@ -1,5 +1,5 @@
 <script>
-import { ref, provide, useTemplateRef } from 'vue';
+import { ref, provide, useTemplateRef, onMounted, onUnmounted } from 'vue';
 import { useElementSize } from '@vueuse/core';
 // composable
 import { useLabelSuggestions } from 'dashboard/composables/useLabelSuggestions';
@@ -62,6 +62,37 @@ export default {
     } = useLabelSuggestions();
 
     provide('contextMenuElementTarget', conversationPanelRef);
+
+    onMounted(() => {
+      if (window.visualViewport) {
+        const resizeHandler = () => {
+          if (messagesViewRef.value) {
+            if (window.innerWidth < 768) {
+              messagesViewRef.value.style.height = `${window.visualViewport.height}px`;
+            } else {
+              messagesViewRef.value.style.height = '';
+            }
+          }
+        };
+        window.visualViewport.addEventListener('resize', resizeHandler);
+        window.visualViewport.addEventListener('scroll', resizeHandler);
+        resizeHandler();
+        window.messagesViewResizeHandler = resizeHandler;
+      }
+    });
+
+    onUnmounted(() => {
+      if (window.visualViewport && window.messagesViewResizeHandler) {
+        window.visualViewport.removeEventListener(
+          'resize',
+          window.messagesViewResizeHandler
+        );
+        window.visualViewport.removeEventListener(
+          'scroll',
+          window.messagesViewResizeHandler
+        );
+      }
+    });
 
     return {
       captainTasksEnabled,
