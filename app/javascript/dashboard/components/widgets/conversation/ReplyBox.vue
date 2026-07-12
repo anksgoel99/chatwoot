@@ -222,6 +222,9 @@ export default {
         }
         return this.$t('CONVERSATION.FOOTER.MESSAGING_RESTRICTED');
       }
+      if (this.isMobile) {
+        return this.isPrivate ? 'Write a private note...' : 'Type message';
+      }
       return this.isPrivate
         ? this.$t('CONVERSATION.FOOTER.PRIVATE_MSG_INPUT')
         : this.$t('CONVERSATION.FOOTER.MSG_INPUT');
@@ -1320,9 +1323,19 @@ export default {
         @click="showMobileActions = !showMobileActions"
       >
         <span
-          class="w-5 h-5 i-lucide-plus transition-transform duration-200"
-          :class="{ 'rotate-45': showMobileActions }"
+          class="w-5 h-5 transition-transform duration-200"
+          :class="showMobileActions ? 'i-lucide-x' : 'i-lucide-plus'"
         />
+      </button>
+
+      <!-- Copilot/Magic Button -->
+      <button
+        v-if="copilot.isActive.value"
+        type="button"
+        class="flex items-center justify-center w-9 h-9 rounded-full bg-n-alpha-2 hover:bg-n-alpha-3 text-n-slate-11 shrink-0 cursor-pointer"
+        @click="copilot.toggleEditor"
+      >
+        <span class="w-5 h-5 i-lucide-sparkles text-n-violet-9" />
       </button>
 
       <!-- Text Input Field Container -->
@@ -1358,10 +1371,24 @@ export default {
         <!-- Emoji Button inside the text box -->
         <button
           type="button"
-          class="text-n-slate-11 hover:text-n-slate-12 ml-1 cursor-pointer"
+          class="text-n-slate-11 hover:text-n-slate-12 ml-1 cursor-pointer shrink-0"
           @click="toggleEmojiPicker"
         >
           <span class="w-4.5 h-4.5 i-lucide-smile" />
+        </button>
+        <!-- Lock Button inside the text box to toggle Reply Type -->
+        <button
+          type="button"
+          class="text-n-slate-11 hover:text-n-slate-12 ml-1.5 cursor-pointer shrink-0"
+          :class="{ 'text-amber-500': isOnPrivateNote }"
+          @click="toggleReplyType"
+        >
+          <span
+            class="w-4.5 h-4.5"
+            :class="
+              isOnPrivateNote ? 'i-lucide-lock' : 'i-lucide-lock-keyhole-open'
+            "
+          />
         </button>
       </div>
 
@@ -1395,7 +1422,7 @@ export default {
         v-if="showFileUpload"
         type="button"
         class="flex items-center gap-3 w-full p-2.5 hover:bg-n-alpha-2 rounded-xl text-left cursor-pointer border-none bg-transparent"
-        @click="$refs.mobileFileInput.click()"
+        @click="$refs.mobilePhotoInput.click()"
       >
         <span
           class="flex items-center justify-center w-8 h-8 rounded-lg bg-n-alpha-2 text-n-slate-12"
@@ -1403,7 +1430,58 @@ export default {
           <span class="w-4.5 h-4.5 i-lucide-image" />
         </span>
         <span class="text-sm font-medium text-n-slate-12">{{
-          $t('CONVERSATION.REPLYBOX.TIP_ATTACH_ICON')
+          $t('CONVERSATION.REPLYBOX.PHOTOS')
+        }}</span>
+        <input
+          ref="mobilePhotoInput"
+          type="file"
+          accept="image/*"
+          class="hidden"
+          :multiple="enableMultipleFileUpload"
+          @change="handleMobileFileChange"
+        />
+      </button>
+
+      <!-- Camera Button -->
+      <button
+        v-if="showFileUpload"
+        type="button"
+        class="flex items-center gap-3 w-full p-2.5 hover:bg-n-alpha-2 rounded-xl text-left cursor-pointer border-none bg-transparent"
+        @click="$refs.mobileCameraInput.click()"
+      >
+        <span
+          class="flex items-center justify-center w-8 h-8 rounded-lg bg-n-alpha-2 text-n-slate-12"
+        >
+          <span class="w-4.5 h-4.5 i-lucide-camera" />
+        </span>
+        <span class="text-sm font-medium text-n-slate-12">{{
+          $t('CONVERSATION.REPLYBOX.CAMERA')
+        }}</span>
+        <input
+          ref="mobileCameraInput"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          class="hidden"
+          :multiple="enableMultipleFileUpload"
+          @change="handleMobileFileChange"
+        />
+      </button>
+
+      <!-- Attach Generic File Button -->
+      <button
+        v-if="showFileUpload"
+        type="button"
+        class="flex items-center gap-3 w-full p-2.5 hover:bg-n-alpha-2 rounded-xl text-left cursor-pointer border-none bg-transparent"
+        @click="$refs.mobileFileInput.click()"
+      >
+        <span
+          class="flex items-center justify-center w-8 h-8 rounded-lg bg-n-alpha-2 text-n-slate-12"
+        >
+          <span class="w-4.5 h-4.5 i-lucide-paperclip" />
+        </span>
+        <span class="text-sm font-medium text-n-slate-12">{{
+          $t('CONVERSATION.REPLYBOX.ATTACH_FILE')
         }}</span>
         <input
           ref="mobileFileInput"
@@ -1461,27 +1539,6 @@ export default {
         </span>
         <span class="text-sm font-medium text-n-slate-12">{{
           $t('CONVERSATION.ACCORDION.MACROS')
-        }}</span>
-      </button>
-
-      <!-- Note Toggle (Reply / Private Note) -->
-      <button
-        type="button"
-        class="flex items-center gap-3 w-full p-2.5 hover:bg-n-alpha-2 rounded-xl text-left cursor-pointer border-none bg-transparent"
-        @click="toggleReplyType"
-      >
-        <span
-          class="flex items-center justify-center w-8 h-8 rounded-lg bg-n-alpha-2 text-n-slate-12"
-          :class="{
-            'bg-amber-100 dark:bg-amber-950/40 text-amber-600': isOnPrivateNote,
-          }"
-        >
-          <span class="w-4.5 h-4.5 i-lucide-lock" />
-        </span>
-        <span class="text-sm font-medium text-n-slate-12">{{
-          isOnPrivateNote
-            ? $t('CONVERSATION.REPLYBOX.PRIVATE_NOTE')
-            : $t('CONVERSATION.REPLYBOX.REPLY')
         }}</span>
       </button>
     </div>

@@ -1142,4 +1142,21 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
     }
   }
 }
+
+@media (max-width: 768px) {
+  .ProseMirror-woot-style {
+    min-height: 2rem !important;
+    max-height: 7.5rem !important;
+    height: auto !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  .resizable-editor-wrapper {
+    .ProseMirror-woot-style {
+      min-height: 2rem !important;
+      max-height: 7.5rem !important;
+      height: auto !important;
+    }
+  }
+}
 </style>
