@@ -78,18 +78,26 @@ export default {
     if (window.visualViewport) {
       const resizeHandler = () => {
         const el = this.$refs.conversationBoxRef;
-        if (el) {
-          if (window.innerWidth < 768) {
+        if (window.innerWidth < 768) {
+          const height = window.visualViewport.height;
+          document.documentElement.style.height = `${height}px`;
+          document.body.style.height = `${height}px`;
+
+          if (el) {
             const keyboardOpen =
-              window.innerHeight - window.visualViewport.height > 100;
+              window.innerHeight - height > 100;
             const offset = keyboardOpen ? 0 : 56;
-            el.style.height = `${window.visualViewport.height - offset}px`;
+            el.style.height = `${height - offset}px`;
 
             // Reset viewport offset scroll on mobile to keep layout locked
             if (window.visualViewport.pageTop > 0) {
               window.scrollTo(0, 0);
             }
-          } else {
+          }
+        } else {
+          document.documentElement.style.height = '';
+          document.body.style.height = '';
+          if (el) {
             el.style.height = '';
           }
         }
@@ -103,6 +111,8 @@ export default {
     }
   },
   unmounted() {
+    document.documentElement.style.height = '';
+    document.body.style.height = '';
     if (window.visualViewport && this.viewportResizeHandler) {
       window.visualViewport.removeEventListener(
         'resize',
