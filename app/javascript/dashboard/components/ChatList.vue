@@ -123,6 +123,7 @@ const getAgentOpenCount = agentId => {
 };
 
 const agentSearchQuery = ref('');
+const showAgentSearchInput = ref(false);
 
 const sortedAgents = computed(() => {
   let list = [...(agentList.value || [])];
@@ -703,6 +704,8 @@ function updateAssigneeTab(selectedTab) {
     resetBulkActions();
     emitter.emit('clearSearchInput');
     searchQuery.value = '';
+    agentSearchQuery.value = '';
+    showAgentSearchInput.value = false;
     activeAssigneeTab.value = selectedTab;
     selectedAgentFilter.value = null;
     if (selectedTab === 'resolved') {
@@ -1011,7 +1014,7 @@ watch(conversationFilters, (newVal, oldVal) => {
     />
 
     <!-- Mobile Search Bar -->
-    <div class="px-3 py-2 border-b border-n-weak bg-n-solid-1 shrink-0">
+    <div class="px-3 py-2 border-b border-n-weak bg-n-surface-1 shrink-0">
       <div class="relative flex items-center">
         <span class="absolute left-3 text-n-slate-11 i-lucide-search size-4" />
         <input
@@ -1033,7 +1036,7 @@ watch(conversationFilters, (newVal, oldVal) => {
 
     <!-- Horizontal scrolling Agent Filter list -->
     <div
-      v-if="agentList && agentList.length > 0"
+      v-if="agentList && agentList.length > 0 && (activeAssigneeTab === 'all' || activeAssigneeTab === 'resolved')"
       ref="agentScrollContainer"
       class="flex items-center gap-3 overflow-x-auto px-4 py-2 border-b border-n-weak select-none custom-thin-scrollbar shrink-0 bg-n-solid-1 scroll-smooth"
       @wheel="handleAgentScrollWheel"
@@ -1066,27 +1069,46 @@ watch(conversationFilters, (newVal, oldVal) => {
         </span>
       </button>
 
-      <!-- Agent Filter Search Input -->
-      <div class="flex flex-col items-center shrink-0 w-24">
-        <div class="relative flex items-center h-10">
-          <input
-            v-model="agentSearchQuery"
-            type="text"
-            placeholder="Search Agent"
-            class="w-full px-2 py-1 text-[10px] rounded-lg border border-n-weak bg-n-surface-1 focus:border-n-brand text-n-slate-12 placeholder-n-slate-11 focus:outline-none"
-          />
-          <button
-            v-if="agentSearchQuery"
-            type="button"
-            class="absolute right-1.5 text-n-slate-11 hover:text-n-slate-12 cursor-pointer focus:outline-none bg-transparent border-none p-0"
-            @click="agentSearchQuery = ''"
-          >
-            <span class="i-lucide-x size-3" />
-          </button>
+      <!-- Search Agent Toggle Button -->
+      <button
+        type="button"
+        class="flex flex-col items-center gap-1 shrink-0 cursor-pointer focus:outline-none bg-transparent border-none p-0"
+        @click="showAgentSearchInput = !showAgentSearchInput"
+      >
+        <div
+          class="flex items-center justify-center w-10 h-10 rounded-full border text-n-slate-11 transition-all duration-150"
+          :class="
+            showAgentSearchInput || agentSearchQuery
+              ? 'border-n-brand bg-n-alpha-1 text-n-brand ring-1 ring-n-brand'
+              : 'border-n-weak bg-n-alpha-1 text-n-slate-11'
+          "
+        >
+          <span class="i-lucide-search size-4" />
         </div>
-        <span class="text-[9px] text-n-slate-11 leading-none mt-0.5 whitespace-nowrap">
-          Filter List
+        <span class="text-[10px] text-n-slate-11 leading-none mt-0.5 whitespace-nowrap">
+          Search
         </span>
+      </button>
+
+      <!-- Agent Filter Search Input -->
+      <div
+        v-if="showAgentSearchInput"
+        class="relative flex items-center h-10 shrink-0 w-28"
+      >
+        <input
+          v-model="agentSearchQuery"
+          type="text"
+          placeholder="Agent name..."
+          class="w-full px-2 py-1 text-[10px] rounded-lg border border-n-weak bg-n-surface-1 focus:border-n-brand text-n-slate-12 placeholder-n-slate-11 focus:outline-none"
+        />
+        <button
+          v-if="agentSearchQuery"
+          type="button"
+          class="absolute right-1.5 text-n-slate-11 hover:text-n-slate-12 cursor-pointer focus:outline-none bg-transparent border-none p-0"
+          @click="agentSearchQuery = ''"
+        >
+          <span class="i-lucide-x size-3" />
+        </button>
       </div>
 
       <!-- Active Individual Agents -->
