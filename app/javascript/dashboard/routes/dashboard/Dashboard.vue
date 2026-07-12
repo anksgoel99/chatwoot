@@ -62,6 +62,7 @@ export default {
       showCreateAccountModal: false,
       showShortcutModal: false,
       isMobileSidebarOpen: false,
+      isKeyboardActive: false,
     };
   },
   computed: {
@@ -103,6 +104,30 @@ export default {
       immediate: true,
     },
   },
+  mounted() {
+    if (window.visualViewport) {
+      const checkKeyboard = () => {
+        this.isKeyboardActive =
+          window.innerHeight - window.visualViewport.height > 100;
+      };
+      window.visualViewport.addEventListener('resize', checkKeyboard);
+      window.visualViewport.addEventListener('scroll', checkKeyboard);
+      this.dashboardViewportResizeHandler = checkKeyboard;
+      checkKeyboard();
+    }
+  },
+  unmounted() {
+    if (window.visualViewport && this.dashboardViewportResizeHandler) {
+      window.visualViewport.removeEventListener(
+        'resize',
+        this.dashboardViewportResizeHandler
+      );
+      window.visualViewport.removeEventListener(
+        'scroll',
+        this.dashboardViewportResizeHandler
+      );
+    }
+  },
   methods: {
     toggleMobileSidebar() {
       this.isMobileSidebarOpen = !this.isMobileSidebarOpen;
@@ -143,7 +168,7 @@ export default {
 
     <main
       class="flex flex-1 h-full w-full min-h-0 px-0 overflow-hidden bg-n-surface-1"
-      :class="{ 'pb-14': isSmallScreen }"
+      :class="{ 'pb-14': isSmallScreen && !isKeyboardActive }"
     >
       <UpgradePage
         v-show="showUpgradePage"
@@ -180,6 +205,7 @@ export default {
     <!-- Mobile Bottom Navigation Tab Bar -->
     <div
       v-if="isSmallScreen"
+      v-show="!isKeyboardActive"
       class="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around h-14 bg-n-background/90 backdrop-blur-md border-t border-n-weak pb-safe-bottom"
     >
       <RouterLink

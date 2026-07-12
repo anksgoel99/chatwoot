@@ -74,6 +74,40 @@ export default {
   mounted() {
     this.fetchLabels();
     this.$store.dispatch('dashboardApps/get');
+
+    if (window.visualViewport) {
+      const resizeHandler = () => {
+        const el = this.$refs.conversationBoxRef;
+        if (el) {
+          if (window.innerWidth < 768) {
+            const keyboardOpen =
+              window.innerHeight - window.visualViewport.height > 100;
+            const offset = keyboardOpen ? 0 : 56;
+            el.style.height = `${window.visualViewport.height - offset}px`;
+          } else {
+            el.style.height = '';
+          }
+        }
+      };
+
+      window.visualViewport.addEventListener('resize', resizeHandler);
+      window.visualViewport.addEventListener('scroll', resizeHandler);
+      this.viewportResizeHandler = resizeHandler;
+
+      resizeHandler();
+    }
+  },
+  unmounted() {
+    if (window.visualViewport && this.viewportResizeHandler) {
+      window.visualViewport.removeEventListener(
+        'resize',
+        this.viewportResizeHandler
+      );
+      window.visualViewport.removeEventListener(
+        'scroll',
+        this.viewportResizeHandler
+      );
+    }
   },
   methods: {
     fetchLabels() {
@@ -91,6 +125,7 @@ export default {
 
 <template>
   <div
+    ref="conversationBoxRef"
     class="conversation-details-wrap flex flex-col min-w-0 w-full bg-n-surface-1 relative"
     :class="{
       'border-l rtl:border-l-0 rtl:border-r border-n-weak': !isOnExpandedLayout,

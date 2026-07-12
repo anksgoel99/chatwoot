@@ -45,13 +45,5 @@ const formattedBody = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col">
-    <span v-dompurify-html="formattedBody" class="prose prose-bubble" />
-    <div
-      v-if="parsed.signature"
-      class="mt-2 text-xs text-n-slate-11 font-normal leading-normal whitespace-nowrap overflow-hidden text-ellipsis select-none"
-    >
-      {{ parsed.signature }}
-    </div>
-  </div>
+  <span v-dompurify-html="formattedBody" class="prose prose-bubble" />
 </template>
