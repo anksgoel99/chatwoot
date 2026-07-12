@@ -120,10 +120,12 @@ const toggleContactPanel = () => {
 };
 
 const resolveChat = () => {
+  const isResolved = props.chat.status === 'resolved';
+  const nextStatus = isResolved ? 'open' : 'resolved';
   store
     .dispatch('toggleStatus', {
       conversationId: props.chat.id,
-      status: 'resolved',
+      status: nextStatus,
     })
     .then(() => {
       useAlert(t('CONVERSATION.CHANGE_STATUS'));
@@ -274,10 +276,19 @@ const handleSelectAgent = agent => {
         <!-- Resolve Button -->
         <button
           type="button"
-          class="text-sm font-semibold bg-n-alpha-2 hover:bg-n-alpha-3 text-n-slate-12 px-3 py-1.5 rounded-lg border-none cursor-pointer"
+          class="text-sm font-semibold px-3 py-1.5 rounded-lg border-none cursor-pointer"
+          :class="
+            chat.status === 'resolved'
+              ? 'bg-n-brand text-white hover:bg-n-brand/90'
+              : 'bg-n-alpha-2 hover:bg-n-alpha-3 text-n-slate-12'
+          "
           @click="resolveChat"
         >
-          {{ $t('CONVERSATION.HEADER.RESOLVE_ACTION') }}
+          {{
+            chat.status === 'resolved'
+              ? $t('CONVERSATION.HEADER.REOPEN_ACTION')
+              : $t('CONVERSATION.HEADER.RESOLVE_ACTION')
+          }}
         </button>
       </div>
     </div>
