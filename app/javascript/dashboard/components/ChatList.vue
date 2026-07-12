@@ -17,6 +17,7 @@ import DeleteCustomViews from 'dashboard/routes/dashboard/customviews/DeleteCust
 import ConversationBulkActions from './widgets/conversation/conversationBulkActions/Index.vue';
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
 import ConversationResolveAttributesModal from 'dashboard/components-next/ConversationWorkflow/ConversationResolveAttributesModal.vue';
+import Avatar from 'next/avatar/Avatar.vue';
 
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAlert } from 'dashboard/composables';
@@ -102,6 +103,35 @@ const conversationStats = useMapGetter('conversationStats/getStats');
 const appliedFilters = useMapGetter('getAppliedConversationFiltersV2');
 const folders = useMapGetter('customViews/getConversationCustomViews');
 const agentList = useMapGetter('agents/getAgents');
+
+const selectedAgentFilter = ref(null);
+
+const getAgentOpenCount = agentId => {
+  const allConversations = store.state.conversations.allConversations || [];
+  return allConversations.filter(
+    c => c.meta?.assignee?.id === agentId && c.status === 'open'
+  ).length;
+};
+
+const sortedAgents = computed(() => {
+  const list = [...(agentList.value || [])];
+  return list.sort((a, b) => {
+    const aOnline = a.availability_status === 'online';
+    const bOnline = b.availability_status === 'online';
+    if (aOnline && !bOnline) return -1;
+    if (!aOnline && bOnline) return 1;
+    return a.name.localeCompare(b.name);
+  });
+});
+
+const selectAgentFilter = agentId => {
+  if (agentId) {
+    selectedAgentFilter.value = agentId;
+    activeAssigneeTab.value = wootConstants.ASSIGNEE_TYPE.ALL;
+  } else {
+    selectedAgentFilter.value = null;
+  }
+};
 const teamsList = useMapGetter('teams/getTeams');
 const inboxesList = useMapGetter('inboxes/getInboxes');
 const campaigns = useMapGetter('campaigns/getAllCampaigns');
@@ -344,6 +374,13 @@ const conversationList = computed(() => {
     localConversationList = localConversationList.filter(conversation => {
       return matchesFilters(conversation, payload);
     });
+  }
+
+  if (selectedAgentFilter.value) {
+    localConversationList = localConversationList.filter(
+      conversation =>
+        conversation.meta?.assignee?.id === selectedAgentFilter.value
+    );
   }
 
   if (
@@ -608,6 +645,7 @@ function updateAssigneeTab(selectedTab) {
     resetBulkActions();
     emitter.emit('clearSearchInput');
     activeAssigneeTab.value = selectedTab;
+    selectedAgentFilter.value = null;
     if (!currentPage.value) {
       fetchConversations();
     }
@@ -905,6 +943,79 @@ watch(conversationFilters, (newVal, oldVal) => {
       @reset-filters="resetAndFetchData"
       @basic-filter-change="onBasicFilterChange"
     />
+
+    <!-- Horizontal scrolling Agent Filter list -->
+    <div
+      v-if="sortedAgents.length > 0"
+      class="flex items-center gap-3 overflow-x-auto px-4 py-2 border-b border-n-weak select-none no-scrollbar shrink-0 bg-n-solid-1 scroll-smooth"
+    >
+      <!-- All Agent Filter Button -->
+      <button
+        type="button"
+        class="flex flex-col items-center gap-1 shrink-0 cursor-pointer focus:outline-none bg-transparent border-none p-0"
+        @click="selectAgentFilter(null)"
+      >
+        <div
+          class="flex items-center justify-center w-10 h-10 rounded-full border text-[10px] font-bold transition-all duration-150"
+          :class="
+            !selectedAgentFilter
+              ? 'border-n-brand bg-n-brand text-white shadow-sm ring-1 ring-n-brand'
+              : 'border-n-weak bg-n-alpha-1 text-n-slate-11'
+          "
+        >
+          {{ $t('CHAT_LIST.ALL_AGENTS_LABEL') }}
+        </div>
+        <span
+          class="text-[10px] truncate max-w-[56px] text-center font-medium leading-none mt-0.5"
+          :class="
+            !selectedAgentFilter
+              ? 'text-n-brand font-semibold'
+              : 'text-n-slate-11'
+          "
+        >
+          {{ $t('CHAT_LIST.ALL_AGENTS_TEXT') }}
+        </span>
+      </button>
+
+      <!-- Active Individual Agents -->
+      <button
+        v-for="agent in sortedAgents"
+        :key="agent.id"
+        type="button"
+        class="flex flex-col items-center gap-1 shrink-0 cursor-pointer focus:outline-none bg-transparent border-none p-0 relative"
+        @click="selectAgentFilter(agent.id)"
+      >
+        <!-- Badge count for open chats -->
+        <span
+          v-if="getAgentOpenCount(agent.id) > 0"
+          class="absolute -top-1 -right-1 flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-n-brand text-white text-[9px] font-bold z-10 shadow-sm border border-white dark:border-n-solid-1"
+        >
+          {{ getAgentOpenCount(agent.id) }}
+        </span>
+        <Avatar
+          :name="agent.name"
+          :src="agent.thumbnail"
+          :size="40"
+          :status="agent.availability_status"
+          class="transition-all duration-150"
+          :class="
+            selectedAgentFilter === agent.id
+              ? 'ring-2 ring-n-brand ring-offset-2 dark:ring-offset-n-solid-1'
+              : ''
+          "
+        />
+        <span
+          class="text-[10px] truncate max-w-[56px] text-center font-medium leading-none mt-0.5"
+          :class="
+            selectedAgentFilter === agent.id
+              ? 'text-n-brand font-semibold'
+              : 'text-n-slate-11'
+          "
+        >
+          {{ agent.name.split(' ')[0] }}
+        </span>
+      </button>
+    </div>
 
     <TeleportWithDirection
       v-if="showAddFoldersModal"

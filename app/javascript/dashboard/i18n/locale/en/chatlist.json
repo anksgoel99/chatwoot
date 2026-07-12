@@ -14,6 +14,8 @@
       "INPUT": "Search for People, Chats, Saved Replies .."
     },
     "FILTER_ALL": "All",
+    "ALL_AGENTS_LABEL": "ALL",
+    "ALL_AGENTS_TEXT": "All",
     "ASSIGNEE_TYPE_TABS": {
       "me": "Mine",
       "unassigned": "Unassigned",
