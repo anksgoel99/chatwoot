@@ -47,3 +47,25 @@ const formattedBody = computed(() => {
 <template>
   <span v-dompurify-html="formattedBody" class="prose prose-bubble" />
 </template>
+
+<style lang="scss">
+.prose-bubble {
+  p {
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
+    line-height: 1.4 !important;
+  }
+
+  ul,
+  ol {
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
+    padding-left: 1.25rem !important;
+  }
+
+  li {
+    margin-top: 0.125rem !important;
+    margin-bottom: 0.125rem !important;
+  }
+}
+</style>

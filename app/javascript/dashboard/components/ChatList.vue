@@ -105,6 +105,14 @@ const folders = useMapGetter('customViews/getConversationCustomViews');
 const agentList = useMapGetter('agents/getAgents');
 
 const selectedAgentFilter = ref(null);
+const agentScrollContainer = ref(null);
+
+const handleAgentScrollWheel = e => {
+  if (e.deltaY !== 0 && agentScrollContainer.value) {
+    e.preventDefault();
+    agentScrollContainer.value.scrollLeft += e.deltaY;
+  }
+};
 
 const getAgentOpenCount = agentId => {
   const allConversations = store.state.conversations.allConversations || [];
@@ -206,7 +214,7 @@ const userPermissions = computed(() => {
 });
 
 const assigneeTabItems = computed(() => {
-  return filterItemsByPermission(
+  const tabs = filterItemsByPermission(
     ASSIGNEE_TYPE_TAB_PERMISSIONS,
     userPermissions.value,
     item => item.permissions
@@ -215,6 +223,19 @@ const assigneeTabItems = computed(() => {
     name: t(`CHAT_LIST.ASSIGNEE_TYPE_TABS.${key}`),
     count: conversationStats.value[countKey] || 0,
   }));
+
+  const allConversations = store.state.conversations.allConversations || [];
+  const localResolvedCount = allConversations.filter(
+    c => c.status === 'resolved'
+  ).length;
+
+  tabs.push({
+    key: 'resolved',
+    name: t('CHAT_LIST.ASSIGNEE_TYPE_TABS.resolved') || 'Resolved',
+    count: localResolvedCount,
+  });
+
+  return tabs;
 });
 
 const showAssigneeInConversationCard = computed(() => {
@@ -362,6 +383,10 @@ const conversationList = computed(() => {
       localConversationList = [...mineChatsList.value(filters)];
     } else if (activeAssigneeTab.value === 'unassigned') {
       localConversationList = [...unAssignedChatsList.value(filters)];
+    } else if (activeAssigneeTab.value === 'resolved') {
+      localConversationList = [...allChatList.value(filters)].filter(
+        c => c.status === 'resolved'
+      );
     } else {
       localConversationList = [...allChatList.value(filters)];
     }
@@ -646,6 +671,11 @@ function updateAssigneeTab(selectedTab) {
     emitter.emit('clearSearchInput');
     activeAssigneeTab.value = selectedTab;
     selectedAgentFilter.value = null;
+    if (selectedTab === 'resolved') {
+      activeStatus.value = wootConstants.STATUS_TYPE.RESOLVED;
+    } else {
+      activeStatus.value = wootConstants.STATUS_TYPE.OPEN;
+    }
     if (!currentPage.value) {
       fetchConversations();
     }
@@ -947,7 +977,9 @@ watch(conversationFilters, (newVal, oldVal) => {
     <!-- Horizontal scrolling Agent Filter list -->
     <div
       v-if="sortedAgents.length > 0"
+      ref="agentScrollContainer"
       class="flex items-center gap-3 overflow-x-auto px-4 py-2 border-b border-n-weak select-none no-scrollbar shrink-0 bg-n-solid-1 scroll-smooth"
+      @wheel="handleAgentScrollWheel"
     >
       <!-- All Agent Filter Button -->
       <button

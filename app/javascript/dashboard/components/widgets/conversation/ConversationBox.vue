@@ -84,6 +84,11 @@ export default {
               window.innerHeight - window.visualViewport.height > 100;
             const offset = keyboardOpen ? 0 : 56;
             el.style.height = `${window.visualViewport.height - offset}px`;
+
+            // Reset viewport offset scroll on mobile to keep layout locked
+            if (window.visualViewport.pageTop > 0) {
+              window.scrollTo(0, 0);
+            }
           } else {
             el.style.height = '';
           }

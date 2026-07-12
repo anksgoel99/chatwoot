@@ -4,6 +4,7 @@ import { useElementSize } from '@vueuse/core';
 // composable
 import { useLabelSuggestions } from 'dashboard/composables/useLabelSuggestions';
 import { useSnakeCase } from 'dashboard/composables/useTransformKeys';
+import { useAlert } from 'dashboard/composables';
 
 // components
 import ReplyBox from './ReplyBox.vue';
@@ -279,6 +280,17 @@ export default {
   },
 
   methods: {
+    async reopenConversation() {
+      try {
+        await this.$store.dispatch('toggleStatus', {
+          conversationId: this.currentChat.id,
+          status: 'open',
+        });
+        useAlert(this.$t('CONVERSATION.CHANGE_STATUS'));
+      } catch (error) {
+        // ignore
+      }
+    },
     async fetchSuggestions() {
       // start empty, this ensures that the label suggestions are not shown
       this.labelSuggestions = [];
@@ -526,7 +538,23 @@ export default {
           />
         </div>
       </div>
+      <div
+        v-if="currentChat.status === 'resolved'"
+        class="flex flex-col items-center justify-center p-4 bg-n-solid-1 border-t border-n-weak"
+      >
+        <button
+          type="button"
+          class="w-full max-w-xs py-3 px-6 text-sm font-semibold text-white bg-n-brand hover:bg-n-brand/90 active:scale-[0.98] transition-all duration-150 rounded-lg text-center cursor-pointer border-none shadow-sm"
+          @click="reopenConversation"
+        >
+          {{ 'Start Chat' }}
+        </button>
+        <span class="text-[10px] text-n-slate-11 mt-2">{{
+          'Powered by Tapify'
+        }}</span>
+      </div>
       <ResizableEditorWrapper
+        v-else
         ref="resizableEditorWrapperRef"
         :container-height="Math.max(0, containerHeight - topBannerHeight)"
       >

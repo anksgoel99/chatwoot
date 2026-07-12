@@ -11,7 +11,7 @@
     "MENTION_HEADING": "Mentions",
     "UNATTENDED_HEADING": "Unattended",
     "SEARCH": {
-      "INPUT": "Search for People, Chats, Saved Replies .."
+      "INPUT": "Search by name or number"
     },
     "FILTER_ALL": "All",
     "ALL_AGENTS_LABEL": "ALL",
@@ -19,7 +19,8 @@
     "ASSIGNEE_TYPE_TABS": {
       "me": "Mine",
       "unassigned": "Unassigned",
-      "all": "All"
+      "all": "All",
+      "resolved": "Resolved"
     },
     "CHAT_STATUS_FILTER_ITEMS": {
       "open": {
