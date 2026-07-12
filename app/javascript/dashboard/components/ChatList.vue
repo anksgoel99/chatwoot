@@ -115,6 +115,33 @@ const handleAgentScrollWheel = e => {
   }
 };
 
+const isDragging = ref(false);
+const startX = ref(0);
+const scrollLeftVal = ref(0);
+
+const handleAgentMouseDown = e => {
+  if (!agentScrollContainer.value) return;
+  isDragging.value = true;
+  startX.value = e.pageX - agentScrollContainer.value.offsetLeft;
+  scrollLeftVal.value = agentScrollContainer.value.scrollLeft;
+};
+
+const handleAgentMouseLeave = () => {
+  isDragging.value = false;
+};
+
+const handleAgentMouseUp = () => {
+  isDragging.value = false;
+};
+
+const handleAgentMouseMove = e => {
+  if (!isDragging.value || !agentScrollContainer.value) return;
+  e.preventDefault();
+  const x = e.pageX - agentScrollContainer.value.offsetLeft;
+  const walk = (x - startX.value) * 1.5;
+  agentScrollContainer.value.scrollLeft = scrollLeftVal.value - walk;
+};
+
 const getAgentOpenCount = agentId => {
   const allConversations = store.state.conversations.allConversations || [];
   return allConversations.filter(
@@ -1036,10 +1063,15 @@ watch(conversationFilters, (newVal, oldVal) => {
 
     <!-- Horizontal scrolling Agent Filter list -->
     <div
+      v-slot="{ showStatusFilter }"
       v-if="agentList && agentList.length > 0 && (activeAssigneeTab === 'all' || activeAssigneeTab === 'resolved')"
       ref="agentScrollContainer"
-      class="flex items-center gap-3 overflow-x-auto px-4 py-2 border-b border-n-weak select-none custom-thin-scrollbar shrink-0 bg-n-solid-1 scroll-smooth"
+      class="flex items-center gap-3 overflow-x-auto px-4 py-2 border-b border-n-weak select-none custom-thin-scrollbar shrink-0 bg-n-solid-1 scroll-smooth cursor-grab active:cursor-grabbing"
       @wheel="handleAgentScrollWheel"
+      @mousedown="handleAgentMouseDown"
+      @mouseleave="handleAgentMouseLeave"
+      @mouseup="handleAgentMouseUp"
+      @mousemove="handleAgentMouseMove"
     >
       <!-- All Agent Filter Button -->
       <button
@@ -1068,48 +1100,6 @@ watch(conversationFilters, (newVal, oldVal) => {
           {{ $t('CHAT_LIST.ALL_AGENTS_TEXT') }}
         </span>
       </button>
-
-      <!-- Search Agent Toggle Button -->
-      <button
-        type="button"
-        class="flex flex-col items-center gap-1 shrink-0 cursor-pointer focus:outline-none bg-transparent border-none p-0"
-        @click="showAgentSearchInput = !showAgentSearchInput"
-      >
-        <div
-          class="flex items-center justify-center w-10 h-10 rounded-full border text-n-slate-11 transition-all duration-150"
-          :class="
-            showAgentSearchInput || agentSearchQuery
-              ? 'border-n-brand bg-n-alpha-1 text-n-brand ring-1 ring-n-brand'
-              : 'border-n-weak bg-n-alpha-1 text-n-slate-11'
-          "
-        >
-          <span class="i-lucide-search size-4" />
-        </div>
-        <span class="text-[10px] text-n-slate-11 leading-none mt-0.5 whitespace-nowrap">
-          Search
-        </span>
-      </button>
-
-      <!-- Agent Filter Search Input -->
-      <div
-        v-if="showAgentSearchInput"
-        class="relative flex items-center h-10 shrink-0 w-28"
-      >
-        <input
-          v-model="agentSearchQuery"
-          type="text"
-          placeholder="Agent name..."
-          class="w-full px-2 py-1 text-[10px] rounded-lg border border-n-weak bg-n-surface-1 focus:border-n-brand text-n-slate-12 placeholder-n-slate-11 focus:outline-none"
-        />
-        <button
-          v-if="agentSearchQuery"
-          type="button"
-          class="absolute right-1.5 text-n-slate-11 hover:text-n-slate-12 cursor-pointer focus:outline-none bg-transparent border-none p-0"
-          @click="agentSearchQuery = ''"
-        >
-          <span class="i-lucide-x size-3" />
-        </button>
-      </div>
 
       <!-- Active Individual Agents -->
       <button
@@ -1180,12 +1170,14 @@ watch(conversationFilters, (newVal, oldVal) => {
       @chat-tab-change="updateAssigneeTab"
     />
 
-    <p
+    <div
       v-if="!chatListLoading && !conversationList.length"
-      class="flex overflow-auto justify-center items-center p-4"
+      class="flex flex-col items-center justify-center p-8 text-center text-n-slate-11 w-full"
     >
-      {{ $t('CHAT_LIST.LIST.404') }}
-    </p>
+      <span class="text-sm font-medium">
+        {{ $t('CHAT_LIST.LIST.404') }}
+      </span>
+    </div>
     <ConversationBulkActions
       :conversations="selectedConversations"
       :all-conversations-selected="allConversationsSelected"
