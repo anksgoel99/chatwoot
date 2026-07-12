@@ -1385,23 +1385,24 @@ export default {
       </button>
     </div>
 
-    <!-- Slide-up/Dropdown Mobile Actions Menu -->
+    <!-- Vertical Mobile Actions Menu (ChatGPT style) -->
     <div
       v-if="showMobileActions"
-      class="grid grid-cols-4 gap-3 bg-n-background p-4 border-t border-n-weak rounded-b-xl shadow-inner"
+      class="absolute bottom-16 left-2 w-56 bg-n-background border border-n-weak rounded-2xl shadow-xl z-50 p-2 flex flex-col gap-1"
     >
       <!-- Media/Photo Upload Button -->
-      <div
+      <button
         v-if="showFileUpload"
-        class="flex flex-col items-center justify-center gap-1 cursor-pointer"
+        type="button"
+        class="flex items-center gap-3 w-full p-2.5 hover:bg-n-alpha-2 rounded-xl text-left cursor-pointer border-none bg-transparent"
         @click="$refs.mobileFileInput.click()"
       >
-        <div
-          class="flex items-center justify-center w-12 h-12 rounded-2xl bg-n-alpha-2 text-n-slate-12 hover:bg-n-alpha-3"
+        <span
+          class="flex items-center justify-center w-8 h-8 rounded-lg bg-n-alpha-2 text-n-slate-12"
         >
-          <span class="w-6 h-6 i-lucide-image" />
-        </div>
-        <span class="text-xs text-n-slate-11">{{
+          <span class="w-4.5 h-4.5 i-lucide-image" />
+        </span>
+        <span class="text-sm font-medium text-n-slate-12">{{
           $t('CONVERSATION.REPLYBOX.TIP_ATTACH_ICON')
         }}</span>
         <input
@@ -1411,74 +1412,78 @@ export default {
           :multiple="enableMultipleFileUpload"
           @change="handleMobileFileChange"
         />
-      </div>
+      </button>
 
       <!-- WhatsApp Template Button -->
-      <div
+      <button
         v-if="showWhatsappTemplates"
-        class="flex flex-col items-center justify-center gap-1 cursor-pointer"
+        type="button"
+        class="flex items-center gap-3 w-full p-2.5 hover:bg-n-alpha-2 rounded-xl text-left cursor-pointer border-none bg-transparent"
         @click="onMobileSelectWhatsappTemplate"
       >
-        <div
-          class="flex items-center justify-center w-12 h-12 rounded-2xl bg-n-alpha-2 text-n-slate-12 hover:bg-n-alpha-3"
+        <span
+          class="flex items-center justify-center w-8 h-8 rounded-lg bg-n-alpha-2 text-n-slate-12"
         >
-          <span class="w-6 h-6 i-lucide-layout-template" />
-        </div>
-        <span class="text-xs text-n-slate-11">{{
+          <span class="w-4.5 h-4.5 i-lucide-layout-template" />
+        </span>
+        <span class="text-sm font-medium text-n-slate-12">{{
           $t('CONVERSATION.FOOTER.WHATSAPP_TEMPLATES')
         }}</span>
-      </div>
+      </button>
 
       <!-- Twilio/Content Template Button -->
-      <div
+      <button
         v-if="showContentTemplates"
-        class="flex flex-col items-center justify-center gap-1 cursor-pointer"
+        type="button"
+        class="flex items-center gap-3 w-full p-2.5 hover:bg-n-alpha-2 rounded-xl text-left cursor-pointer border-none bg-transparent"
         @click="onMobileSelectContentTemplate"
       >
-        <div
-          class="flex items-center justify-center w-12 h-12 rounded-2xl bg-n-alpha-2 text-n-slate-12 hover:bg-n-alpha-3"
+        <span
+          class="flex items-center justify-center w-8 h-8 rounded-lg bg-n-alpha-2 text-n-slate-12"
         >
-          <span class="w-6 h-6 i-lucide-layout-template" />
-        </div>
-        <span class="text-xs text-n-slate-11">{{
+          <span class="w-4.5 h-4.5 i-lucide-layout-template" />
+        </span>
+        <span class="text-sm font-medium text-n-slate-12">{{
           $t('CONTENT_TEMPLATES.MODAL.TITLE')
         }}</span>
-      </div>
+      </button>
 
       <!-- Macros/Canned Button -->
-      <div
-        class="flex flex-col items-center justify-center gap-1 cursor-pointer"
+      <button
+        type="button"
+        class="flex items-center gap-3 w-full p-2.5 hover:bg-n-alpha-2 rounded-xl text-left cursor-pointer border-none bg-transparent"
         @click="triggerMobileCannedMenu"
       >
-        <div
-          class="flex items-center justify-center w-12 h-12 rounded-2xl bg-n-alpha-2 text-n-slate-12 hover:bg-n-alpha-3"
+        <span
+          class="flex items-center justify-center w-8 h-8 rounded-lg bg-n-alpha-2 text-n-slate-12"
         >
-          <span class="w-6 h-6 i-lucide-zap" />
-        </div>
-        <span class="text-xs text-n-slate-11">{{
-          $t('CONVERSATION.MACROS')
+          <span class="w-4.5 h-4.5 i-lucide-zap" />
+        </span>
+        <span class="text-sm font-medium text-n-slate-12">{{
+          $t('CONVERSATION.ACCORDION.MACROS')
         }}</span>
-      </div>
+      </button>
 
       <!-- Note Toggle (Reply / Private Note) -->
-      <div
-        class="flex flex-col items-center justify-center gap-1 cursor-pointer"
+      <button
+        type="button"
+        class="flex items-center gap-3 w-full p-2.5 hover:bg-n-alpha-2 rounded-xl text-left cursor-pointer border-none bg-transparent"
         @click="toggleReplyType"
       >
-        <div
-          class="flex items-center justify-center w-12 h-12 rounded-2xl bg-n-alpha-2 text-n-slate-12 hover:bg-n-alpha-3"
+        <span
+          class="flex items-center justify-center w-8 h-8 rounded-lg bg-n-alpha-2 text-n-slate-12"
           :class="{
             'bg-amber-100 dark:bg-amber-950/40 text-amber-600': isOnPrivateNote,
           }"
         >
-          <span class="w-6 h-6 i-lucide-lock" />
-        </div>
-        <span class="text-xs text-n-slate-11">{{
+          <span class="w-4.5 h-4.5 i-lucide-lock" />
+        </span>
+        <span class="text-sm font-medium text-n-slate-12">{{
           isOnPrivateNote
             ? $t('CONVERSATION.REPLYBOX.PRIVATE_NOTE')
             : $t('CONVERSATION.REPLYBOX.REPLY')
         }}</span>
-      </div>
+      </button>
     </div>
 
     <!-- Audio Recorder overlay inside mobile view -->

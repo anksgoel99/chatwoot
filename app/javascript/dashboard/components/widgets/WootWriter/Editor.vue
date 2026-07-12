@@ -928,6 +928,9 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
   @apply flex flex-col gap-3;
 
   .ProseMirror-menubar {
+    @media (max-width: 768px) {
+      display: none !important;
+    }
     min-height: 1.25rem !important;
     @apply items-center gap-4 flex pb-0 bg-transparent text-n-slate-11 relative ltr:-left-[3px] rtl:-right-[3px];
 
