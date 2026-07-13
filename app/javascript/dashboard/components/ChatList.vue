@@ -26,6 +26,8 @@ import ConversationBulkActions from './widgets/conversation/conversationBulkActi
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
 import ConversationResolveAttributesModal from 'dashboard/components-next/ConversationWorkflow/ConversationResolveAttributesModal.vue';
 import AgentFilterModal from './widgets/conversation/AgentFilterModal.vue';
+import MobileFilterModal from './widgets/conversation/MobileFilterModal.vue';
+import { useWindowSize } from '@vueuse/core';
 
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAlert } from 'dashboard/composables';
@@ -112,12 +114,28 @@ const conversationStats = useMapGetter('conversationStats/getStats');
 const appliedFilters = useMapGetter('getAppliedConversationFiltersV2');
 const folders = useMapGetter('customViews/getConversationCustomViews');
 const agentList = useMapGetter('agents/getAgents');
+const teamsList = useMapGetter('teams/getTeams');
+const inboxesList = useMapGetter('inboxes/getInboxes');
+const campaigns = useMapGetter('campaigns/getAllCampaigns');
+const labels = useMapGetter('labels/getLabels');
+const currentAccountId = useMapGetter('getCurrentAccountId');
+const getTeamFn = useMapGetter('teams/getTeam');
+const getConversationById = useMapGetter('getConversationById');
 
 const selectedAgentFilter = ref(null);
 const showAgentFilterModal = ref(false);
 const showSearchInput = ref(false);
 
 const sidebarWidth = ref(384);
+
+const { width: windowWidth } = useWindowSize();
+const isMobile = computed(() => windowWidth.value < 768);
+
+const activeMobileTab = ref('open');
+const selectedAssigneeType = ref('agent');
+const selectedAssigneeId = ref('me');
+
+const showMobileFilterModal = ref(false);
 
 const loadWidth = () => {
   try {
@@ -130,6 +148,51 @@ const loadWidth = () => {
   }
 };
 
+const activeAssigneeLabel = computed(() => {
+  const selType = selectedAssigneeType.value;
+  const selId = selectedAssigneeId.value;
+  if (selType === 'agent') {
+    if (selId === 'me') return t('CHAT_LIST.ASSIGNEE_GEAR.ME');
+    const agent = agentList.value?.find(agentItem => agentItem.id === selId);
+    return agent ? agent.name : t('CHAT_LIST.ASSIGNEE_GEAR.ME');
+  }
+  if (selType === 'team') {
+    const team = teamsList.value?.find(teamItem => teamItem.id === selId);
+    return team ? team.name : 'Team';
+  }
+  return 'Mine';
+});
+
+const localResolvedCount = computed(() => {
+  const allConversations = store.state.conversations.allConversations || [];
+  return allConversations.filter(c => c.status === 'resolved').length;
+});
+
+const mobileTabs = computed(() => {
+  const mineCount = conversationStats.value?.mineCount || 0;
+  const unassignedCount = conversationStats.value?.unassignedCount || 0;
+  const allCount = conversationStats.value?.allCount || 0;
+
+  const openCount =
+    selectedAssigneeType.value === 'agent' && selectedAssigneeId.value === 'me'
+      ? mineCount
+      : allCount;
+
+  return [
+    { key: 'open', name: t('CHAT_LIST.MOBILE.TABS.open'), count: openCount },
+    {
+      key: 'unassigned',
+      name: t('CHAT_LIST.MOBILE.TABS.unassigned'),
+      count: unassignedCount,
+    },
+    {
+      key: 'resolved',
+      name: t('CHAT_LIST.MOBILE.TABS.resolved'),
+      count: localResolvedCount.value,
+    },
+  ];
+});
+
 const activeAgentLabel = computed(() => {
   if (selectedAgentFilter.value === 'me') return 'Me';
   if (selectedAgentFilter.value === 'other') return 'Other';
@@ -137,18 +200,6 @@ const activeAgentLabel = computed(() => {
   const agent = agentList.value?.find(a => a.id === selectedAgentFilter.value);
   return agent ? agent.name : 'Any';
 });
-
-const selectAgentFilter = agentId => {
-  selectedAgentFilter.value = agentId;
-};
-const teamsList = useMapGetter('teams/getTeams');
-const inboxesList = useMapGetter('inboxes/getInboxes');
-const campaigns = useMapGetter('campaigns/getAllCampaigns');
-const labels = useMapGetter('labels/getLabels');
-const currentAccountId = useMapGetter('getCurrentAccountId');
-// We can't useFunctionGetter here since it needs to be called on setup?
-const getTeamFn = useMapGetter('teams/getTeam');
-const getConversationById = useMapGetter('getConversationById');
 
 const {
   selectedConversations,
@@ -225,15 +276,12 @@ const assigneeTabItems = computed(() => {
     count: conversationStats.value[countKey] || 0,
   }));
 
-  const allConversations = store.state.conversations.allConversations || [];
-  const localResolvedCount = allConversations.filter(
-    c => c.status === 'resolved'
-  ).length;
+  const localResolvedCountValue = localResolvedCount.value;
 
   const resolvedTab = {
     key: 'resolved',
     name: t('CHAT_LIST.ASSIGNEE_TYPE_TABS.resolved') || 'Resolved',
-    count: localResolvedCount,
+    count: localResolvedCountValue,
   };
 
   const mineTab = baseTabs.find(tab => tab.key === 'me');
@@ -279,6 +327,12 @@ const conversationCustomAttributes = useFunctionGetter(
 );
 
 const activeAssigneeTabCount = computed(() => {
+  if (isMobile.value) {
+    const activeTab = mobileTabs.value.find(
+      item => item.key === activeMobileTab.value
+    );
+    return activeTab ? activeTab.count : 0;
+  }
   const count = assigneeTabItems.value.find(
     item => item.key === activeAssigneeTab.value
   ).count;
@@ -306,6 +360,33 @@ const conversationListPagination = computed(() => {
 });
 
 const conversationFilters = computed(() => {
+  if (isMobile.value) {
+    let assigneeType = 'all';
+    if (activeMobileTab.value === 'unassigned') {
+      assigneeType = 'unassigned';
+    } else if (
+      selectedAssigneeType.value === 'agent' &&
+      selectedAssigneeId.value === 'me'
+    ) {
+      assigneeType = 'me';
+    }
+
+    return {
+      inboxId: props.conversationInbox ? props.conversationInbox : undefined,
+      assigneeType,
+      status: activeMobileTab.value === 'resolved' ? 'resolved' : 'open',
+      sortBy: activeSortBy.value,
+      page: conversationListPagination.value,
+      labels: props.label ? [props.label] : undefined,
+      teamId:
+        props.teamId ||
+        (selectedAssigneeType.value === 'team'
+          ? selectedAssigneeId.value
+          : undefined),
+      conversationType: props.conversationType || undefined,
+    };
+  }
+
   return {
     inboxId: props.conversationInbox ? props.conversationInbox : undefined,
     assigneeType: activeAssigneeTab.value,
@@ -326,6 +407,9 @@ const activeTeam = computed(() => {
 });
 
 const pageTitle = computed(() => {
+  if (isMobile.value) {
+    return 'Tapify Support';
+  }
   if (hasAppliedFilters.value) {
     return t('CHAT_LIST.TAB_HEADING');
   }
@@ -382,53 +466,93 @@ function sortByUnreadStatus(conversations) {
 const conversationList = computed(() => {
   let localConversationList = [];
 
-  if (!hasAppliedFiltersOrActiveFolders.value) {
-    const filters = conversationFilters.value;
-    if (
-      props.conversationType === wootConstants.CONVERSATION_TYPE.PARTICIPATING
-    ) {
-      localConversationList = filterByAssigneeTab(
-        participatingChatsList.value(filters)
-      );
-    } else if (activeAssigneeTab.value === 'me') {
-      localConversationList = [...mineChatsList.value(filters)];
-    } else if (activeAssigneeTab.value === 'unassigned') {
-      localConversationList = [...unAssignedChatsList.value(filters)];
-    } else if (activeAssigneeTab.value === 'resolved') {
-      localConversationList = [...allChatList.value(filters)].filter(
-        c => c.status === 'resolved'
-      );
+  if (isMobile.value) {
+    if (hasAppliedFilters.value) {
+      localConversationList = [...chatLists.value];
     } else {
-      localConversationList = [...allChatList.value(filters)];
+      const filters = conversationFilters.value;
+
+      if (activeMobileTab.value === 'unassigned') {
+        localConversationList = [...unAssignedChatsList.value(filters)];
+      } else if (activeMobileTab.value === 'resolved') {
+        localConversationList = [...allChatList.value(filters)].filter(
+          c => c.status === 'resolved'
+        );
+      } else if (
+        selectedAssigneeType.value === 'agent' &&
+        selectedAssigneeId.value === 'me'
+      ) {
+        localConversationList = [...mineChatsList.value(filters)];
+      } else {
+        localConversationList = [...allChatList.value(filters)].filter(
+          c => c.status === 'open'
+        );
+      }
+
+      if (activeMobileTab.value !== 'unassigned') {
+        const selType = selectedAssigneeType.value;
+        const selId = selectedAssigneeId.value;
+
+        if (selType === 'agent' && selId !== 'me' && selId !== null) {
+          localConversationList = localConversationList.filter(
+            c => c.meta?.assignee?.id === selId
+          );
+        } else if (selType === 'team' && selId !== null) {
+          localConversationList = localConversationList.filter(
+            c => c.meta?.team?.id === selId
+          );
+        }
+      }
     }
   } else {
-    localConversationList = [...chatLists.value];
-  }
-
-  if (activeFolder.value) {
-    const { payload } = activeFolder.value.query;
-    localConversationList = localConversationList.filter(conversation => {
-      return matchesFilters(conversation, payload);
-    });
-  }
-
-  if (selectedAgentFilter.value) {
-    if (selectedAgentFilter.value === 'me') {
-      localConversationList = localConversationList.filter(
-        conversation =>
-          conversation.meta?.assignee?.id === currentUser.value?.id
-      );
-    } else if (selectedAgentFilter.value === 'other') {
-      localConversationList = localConversationList.filter(
-        conversation =>
-          conversation.meta?.assignee?.id &&
-          conversation.meta?.assignee?.id !== currentUser.value?.id
-      );
+    if (!hasAppliedFiltersOrActiveFolders.value) {
+      const filters = conversationFilters.value;
+      if (
+        props.conversationType === wootConstants.CONVERSATION_TYPE.PARTICIPATING
+      ) {
+        localConversationList = filterByAssigneeTab(
+          participatingChatsList.value(filters)
+        );
+      } else if (activeAssigneeTab.value === 'me') {
+        localConversationList = [...mineChatsList.value(filters)];
+      } else if (activeAssigneeTab.value === 'unassigned') {
+        localConversationList = [...unAssignedChatsList.value(filters)];
+      } else if (activeAssigneeTab.value === 'resolved') {
+        localConversationList = [...allChatList.value(filters)].filter(
+          c => c.status === 'resolved'
+        );
+      } else {
+        localConversationList = [...allChatList.value(filters)];
+      }
     } else {
-      localConversationList = localConversationList.filter(
-        conversation =>
-          conversation.meta?.assignee?.id === selectedAgentFilter.value
-      );
+      localConversationList = [...chatLists.value];
+    }
+
+    if (activeFolder.value) {
+      const { payload } = activeFolder.value.query;
+      localConversationList = localConversationList.filter(conversation => {
+        return matchesFilters(conversation, payload);
+      });
+    }
+
+    if (selectedAgentFilter.value) {
+      if (selectedAgentFilter.value === 'me') {
+        localConversationList = localConversationList.filter(
+          conversation =>
+            conversation.meta?.assignee?.id === currentUser.value?.id
+        );
+      } else if (selectedAgentFilter.value === 'other') {
+        localConversationList = localConversationList.filter(
+          conversation =>
+            conversation.meta?.assignee?.id &&
+            conversation.meta?.assignee?.id !== currentUser.value?.id
+        );
+      } else {
+        localConversationList = localConversationList.filter(
+          conversation =>
+            conversation.meta?.assignee?.id === selectedAgentFilter.value
+        );
+      }
     }
   }
 
@@ -704,6 +828,51 @@ function loadMoreConversations() {
   }
 }
 
+function updateMobileTab(tabKey) {
+  activeMobileTab.value = tabKey;
+  resetBulkActions();
+  emitter.emit('clearSearchInput');
+  searchQuery.value = '';
+
+  if (
+    selectedAssigneeType.value === 'agent' &&
+    selectedAssigneeId.value !== 'me' &&
+    selectedAssigneeId.value !== null
+  ) {
+    selectedAssigneeType.value = 'all';
+    selectedAssigneeId.value = null;
+    appliedFilter.value = [];
+    store.dispatch('conversationPage/reset');
+    store.dispatch('emptyAllConversations');
+    store.dispatch('clearConversationFilters');
+  }
+
+  if (tabKey === 'resolved') {
+    activeStatus.value = wootConstants.STATUS_TYPE.RESOLVED;
+  } else {
+    activeStatus.value = wootConstants.STATUS_TYPE.OPEN;
+  }
+
+  let filterKey = 'all';
+  if (tabKey === 'resolved') {
+    filterKey = 'resolved';
+  } else if (tabKey === 'unassigned') {
+    filterKey = 'unassigned';
+  } else if (
+    selectedAssigneeType.value === 'agent' &&
+    selectedAssigneeId.value === 'me'
+  ) {
+    filterKey = 'me';
+  }
+
+  const pageIndex =
+    store.getters['conversationPage/getCurrentPageFilter'](filterKey);
+
+  if (!pageIndex) {
+    fetchConversations();
+  }
+}
+
 function updateAssigneeTab(selectedTab) {
   if (activeAssigneeTab.value !== selectedTab) {
     resetBulkActions();
@@ -932,6 +1101,34 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize-sidebar', loadWidth);
 });
 
+const handleAssigneeSelect = selection => {
+  selectedAssigneeType.value = selection.type;
+  selectedAssigneeId.value = selection.id;
+
+  if (
+    selection.type === 'agent' &&
+    selection.id !== 'me' &&
+    selection.id !== null
+  ) {
+    const filterPayload = [
+      {
+        attributeKey: 'assignee_id',
+        filterOperator: 'equal_to',
+        values: [selection.id],
+        queryOperator: 'and',
+      },
+    ];
+    onApplyFilter(filterPayload);
+  } else {
+    // Clear any assignee advanced filters
+    appliedFilter.value = [];
+    store.dispatch('conversationPage/reset');
+    store.dispatch('emptyAllConversations');
+    store.dispatch('clearConversationFilters');
+    resetAndFetchData();
+  }
+};
+
 const deleteConversationDialogRef = ref(null);
 const selectedConversationId = ref(null);
 
@@ -1008,7 +1205,22 @@ watch(conversationFilters, (newVal, oldVal) => {
     :style="!isOnExpandedLayout ? { width: `${sidebarWidth}px` } : {}"
   >
     <slot />
+    <!-- Mobile App Header (Mobile Only) -->
+    <div
+      v-if="isMobile"
+      class="flex items-center justify-between px-4 h-[3.25rem] border-b border-n-weak shrink-0 bg-n-surface-1"
+    >
+      <div class="flex items-center gap-3">
+        <woot-sidemenu-icon class="text-n-slate-12 cursor-pointer" />
+        <h1 class="text-base font-semibold text-n-slate-12">
+          {{ $t('CHAT_LIST.MOBILE.TITLE') }}
+        </h1>
+      </div>
+    </div>
+
+    <!-- Desktop ChatListHeader -->
     <ChatListHeader
+      v-if="!isMobile"
       :page-title="pageTitle"
       :has-applied-filters="hasAppliedFilters"
       :has-active-folders="hasActiveFolders"
@@ -1028,9 +1240,96 @@ watch(conversationFilters, (newVal, oldVal) => {
       @toggle-search="showSearchInput = !showSearchInput"
     />
 
-    <!-- Mobile Search Bar -->
+    <!-- Mobile State Tabs & Header (Mobile Only) -->
     <div
-      v-if="showSearchInput"
+      v-if="isMobile"
+      class="flex flex-col shrink-0 select-none bg-n-surface-1 border-b border-n-weak"
+    >
+      <!-- State Tabs -->
+      <div class="flex border-b border-n-weak text-xs">
+        <button
+          v-for="tab in mobileTabs"
+          :key="tab.key"
+          type="button"
+          class="flex-1 py-3 text-center border-b-2 font-semibold transition-all cursor-pointer bg-transparent border-none"
+          :class="
+            activeMobileTab === tab.key
+              ? 'border-n-brand text-n-brand dark:text-n-brand-hover'
+              : 'border-transparent text-n-slate-11 hover:text-n-slate-12'
+          "
+          @click="updateMobileTab(tab.key)"
+        >
+          {{ tab.name }} ({{ tab.count }})
+        </button>
+      </div>
+
+      <!-- Assignee Selector Row (Only on Open/Resolved) -->
+      <div class="flex items-center justify-between px-4 py-2.5">
+        <div
+          v-if="activeMobileTab !== 'unassigned'"
+          class="flex items-center gap-1 cursor-pointer"
+          @click="showAgentFilterModal = true"
+        >
+          <span class="text-xs font-semibold text-n-slate-11">
+            {{ $t('CHAT_LIST.MOBILE.SHOWING') }}
+          </span>
+          <span
+            class="text-xs font-bold text-n-brand flex items-center gap-0.5"
+          >
+            {{ activeAssigneeLabel }}
+            <span class="i-lucide-chevron-down size-3.5" />
+          </span>
+        </div>
+        <div v-else />
+
+        <!-- Mobile Filter Sheet Trigger -->
+        <button
+          type="button"
+          class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-n-weak bg-n-alpha-1 hover:bg-n-alpha-2 text-xs font-semibold text-n-slate-12 cursor-pointer transition-colors"
+          :class="{
+            'border-n-brand text-n-brand bg-n-brand/5':
+              appliedFilter.length > 0,
+          }"
+          @click="showMobileFilterModal = true"
+        >
+          <span class="i-lucide-list-filter size-3.5" />
+          <span>{{ $t('CHAT_LIST.MOBILE.FILTERS') }}</span>
+          <span
+            v-if="appliedFilter.length"
+            class="flex items-center justify-center min-w-4 h-4 text-[9px] font-bold text-white bg-n-brand rounded-full px-1"
+          >
+            {{ appliedFilter.length }}
+          </span>
+        </button>
+      </div>
+
+      <!-- Always-Visible Mobile Search Bar -->
+      <div class="px-3 pb-2.5">
+        <div class="relative flex items-center">
+          <span
+            class="absolute ltr:left-3 rtl:right-3 text-n-slate-11 i-lucide-search size-4"
+          />
+          <input
+            v-model="searchQuery"
+            type="text"
+            :placeholder="$t('CHAT_LIST.SEARCH.INPUT')"
+            class="w-full ltr:pl-10 rtl:pr-10 ltr:pr-8 rtl:pl-8 py-1.5 text-xs rounded-lg border border-n-weak bg-n-surface-1 focus:border-n-brand text-n-slate-12 placeholder-n-slate-11 focus:outline-none"
+          />
+          <button
+            v-if="searchQuery"
+            type="button"
+            class="absolute ltr:right-3 rtl:left-3 text-n-slate-11 hover:text-n-slate-12 cursor-pointer focus:outline-none bg-transparent border-none p-0"
+            @click="searchQuery = ''"
+          >
+            <span class="i-lucide-x size-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Search Bar -->
+    <div
+      v-if="!isMobile && showSearchInput"
       class="px-3 py-2 border-b border-n-weak bg-n-surface-1 shrink-0 transition-all duration-150 animate-fade-in"
     >
       <div class="relative flex items-center">
@@ -1054,9 +1353,12 @@ watch(conversationFilters, (newVal, oldVal) => {
       </div>
     </div>
 
-    <!-- Filter Agent Row -->
+    <!-- Desktop Intervened agent row -->
     <div
-      v-if="activeAssigneeTab === 'all' || activeAssigneeTab === 'resolved'"
+      v-if="
+        !isMobile &&
+        (activeAssigneeTab === 'all' || activeAssigneeTab === 'resolved')
+      "
       class="flex items-center justify-between px-4 py-2.5 border-b border-n-weak bg-n-surface-1 active:bg-n-alpha-1 cursor-pointer transition-colors duration-150 shrink-0"
       @click="showAgentFilterModal = true"
     >
@@ -1091,7 +1393,7 @@ watch(conversationFilters, (newVal, oldVal) => {
     />
 
     <ChatTypeTabs
-      v-if="!hasAppliedFiltersOrActiveFolders"
+      v-if="!isMobile && !hasAppliedFiltersOrActiveFolders"
       :items="assigneeTabItems"
       :active-tab="activeAssigneeTab"
       is-compact
@@ -1160,9 +1462,16 @@ watch(conversationFilters, (newVal, oldVal) => {
     />
     <AgentFilterModal
       :show="showAgentFilterModal"
-      :selected-agent="selectedAgentFilter"
+      :selected-assignee-type="selectedAssigneeType"
+      :selected-assignee-id="selectedAssigneeId"
       @close="showAgentFilterModal = false"
-      @select="selectAgentFilter"
+      @select="handleAssigneeSelect"
+    />
+    <MobileFilterModal
+      :show="showMobileFilterModal"
+      :initial-filters="appliedFilter"
+      @close="showMobileFilterModal = false"
+      @apply="onApplyFilter"
     />
   </div>
 </template>

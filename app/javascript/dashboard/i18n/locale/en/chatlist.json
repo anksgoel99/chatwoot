@@ -6,6 +6,50 @@
     "LIST": {
       "404": "There are no active conversations in this group."
     },
+    "MOBILE": {
+      "TITLE": "Tapify Support",
+      "SHOWING": "Showing:",
+      "FILTERS": "Filters",
+      "TABS": {
+        "open": "Open",
+        "unassigned": "Unassigned",
+        "resolved": "Resolved"
+      },
+      "FILTER_MODAL": {
+        "TITLE": "Filters",
+        "RESET": "Reset",
+        "PRIORITY": "Priority",
+        "INBOX": "Inbox",
+        "ALL_INBOXES": "All Inboxes",
+        "PARTICIPATION": "Participation",
+        "ANY_PARTICIPATION": "Any Participation",
+        "INTERVENED_BY_ME": "Intervened by Me",
+        "INTERVENED_BY_OTHER": "Intervened by Another Agent",
+        "SELECT_SPECIFIC_AGENT": "Select Specific Agent...",
+        "INTERVENED_BY_AGENT": "Intervened by {name}",
+        "LABELS": "Labels",
+        "SORT_BY": "Sort By",
+        "APPLY": "Apply Filters",
+        "SELECT_AGENT": "Select Agent",
+        "CANCEL": "Cancel",
+        "SEARCH_AGENT_PLACEHOLDER": "Search agent name",
+        "NO_AGENTS": "No agents found"
+      },
+      "AGENT_SELECT": {
+        "TITLE": "Showing Conversations",
+        "SEARCH_PLACEHOLDER": "Search by agent or team",
+        "QUICK_OPTIONS": "Quick Options",
+        "MINE_INITIAL": "M",
+        "ALL_INITIAL": "A",
+        "MINE": "Mine",
+        "MINE_SUB": "Conversations assigned to me",
+        "ALL": "All Conversations",
+        "ALL_SUB": "Conversations of all agents and teams",
+        "TEAMS": "Teams",
+        "AGENTS": "Agents",
+        "NO_RESULTS": "No agents or teams found"
+      }
+    },
     "FAILED_TO_SEND": "Failed to send",
     "TAB_HEADING": "Conversations",
     "MENTION_HEADING": "Mentions",
