@@ -25,6 +25,7 @@ const emit = defineEmits([
   'resetFilters',
   'basicFilterChange',
   'filtersModal',
+  'toggleSearch',
 ]);
 
 const { uiSettings, updateUISettings } = useUISettings();
@@ -165,6 +166,14 @@ const toggleConversationLayout = () => {
       <SwitchLayout
         :is-on-expanded-layout="isOnExpandedLayout"
         @toggle="toggleConversationLayout"
+      />
+      <NextButton
+        v-tooltip.top-end="'Search conversations'"
+        icon="i-lucide-search"
+        slate
+        xs
+        faded
+        @click="emit('toggleSearch')"
       />
     </div>
   </div>

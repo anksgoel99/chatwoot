@@ -18,6 +18,7 @@ import ConversationBulkActions from './widgets/conversation/conversationBulkActi
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
 import ConversationResolveAttributesModal from 'dashboard/components-next/ConversationWorkflow/ConversationResolveAttributesModal.vue';
 import Avatar from 'next/avatar/Avatar.vue';
+import AgentFilterModal from './widgets/conversation/AgentFilterModal.vue';
 
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAlert } from 'dashboard/composables';
@@ -106,41 +107,16 @@ const folders = useMapGetter('customViews/getConversationCustomViews');
 const agentList = useMapGetter('agents/getAgents');
 
 const selectedAgentFilter = ref(null);
-const agentScrollContainer = ref(null);
+const showAgentFilterModal = ref(false);
+const showSearchInput = ref(false);
 
-const handleAgentScrollWheel = e => {
-  if (e.deltaY !== 0 && agentScrollContainer.value) {
-    e.preventDefault();
-    agentScrollContainer.value.scrollLeft += e.deltaY;
-  }
-};
-
-const isDragging = ref(false);
-const startX = ref(0);
-const scrollLeftVal = ref(0);
-
-const handleAgentMouseDown = e => {
-  if (!agentScrollContainer.value) return;
-  isDragging.value = true;
-  startX.value = e.pageX - agentScrollContainer.value.offsetLeft;
-  scrollLeftVal.value = agentScrollContainer.value.scrollLeft;
-};
-
-const handleAgentMouseLeave = () => {
-  isDragging.value = false;
-};
-
-const handleAgentMouseUp = () => {
-  isDragging.value = false;
-};
-
-const handleAgentMouseMove = e => {
-  if (!isDragging.value || !agentScrollContainer.value) return;
-  e.preventDefault();
-  const x = e.pageX - agentScrollContainer.value.offsetLeft;
-  const walk = (x - startX.value) * 1.5;
-  agentScrollContainer.value.scrollLeft = scrollLeftVal.value - walk;
-};
+const activeAgentLabel = computed(() => {
+  if (selectedAgentFilter.value === 'me') return 'Me';
+  if (selectedAgentFilter.value === 'other') return 'Other';
+  if (!selectedAgentFilter.value) return 'Any';
+  const agent = agentList.value?.find(a => a.id === selectedAgentFilter.value);
+  return agent ? agent.name : 'Any';
+});
 
 const getAgentOpenCount = agentId => {
   const allConversations = store.state.conversations.allConversations || [];
@@ -149,31 +125,8 @@ const getAgentOpenCount = agentId => {
   ).length;
 };
 
-const agentSearchQuery = ref('');
-const showAgentSearchInput = ref(false);
-
-const sortedAgents = computed(() => {
-  let list = [...(agentList.value || [])];
-  if (agentSearchQuery.value) {
-    const q = agentSearchQuery.value.toLowerCase().trim();
-    list = list.filter(agent => agent.name.toLowerCase().includes(q));
-  }
-  return list.sort((a, b) => {
-    const aOnline = a.availability_status === 'online';
-    const bOnline = b.availability_status === 'online';
-    if (aOnline && !bOnline) return -1;
-    if (!aOnline && bOnline) return 1;
-    return a.name.localeCompare(b.name);
-  });
-});
-
 const selectAgentFilter = agentId => {
-  if (agentId) {
-    selectedAgentFilter.value = agentId;
-    activeAssigneeTab.value = wootConstants.ASSIGNEE_TYPE.ALL;
-  } else {
-    selectedAgentFilter.value = null;
-  }
+  selectedAgentFilter.value = agentId;
 };
 const teamsList = useMapGetter('teams/getTeams');
 const inboxesList = useMapGetter('inboxes/getInboxes');
@@ -445,10 +398,22 @@ const conversationList = computed(() => {
   }
 
   if (selectedAgentFilter.value) {
-    localConversationList = localConversationList.filter(
-      conversation =>
-        conversation.meta?.assignee?.id === selectedAgentFilter.value
-    );
+    if (selectedAgentFilter.value === 'me') {
+      localConversationList = localConversationList.filter(
+        conversation => conversation.meta?.assignee?.id === currentUser.value?.id
+      );
+    } else if (selectedAgentFilter.value === 'other') {
+      localConversationList = localConversationList.filter(
+        conversation =>
+          conversation.meta?.assignee?.id &&
+          conversation.meta?.assignee?.id !== currentUser.value?.id
+      );
+    } else {
+      localConversationList = localConversationList.filter(
+        conversation =>
+          conversation.meta?.assignee?.id === selectedAgentFilter.value
+      );
+    }
   }
 
   if (searchQuery.value) {
@@ -1035,10 +1000,14 @@ watch(conversationFilters, (newVal, oldVal) => {
       @reset-filters="resetAndFetchData"
       @basic-filter-change="onBasicFilterChange"
       @refresh="fetchConversations"
+      @toggle-search="showSearchInput = !showSearchInput"
     />
 
     <!-- Mobile Search Bar -->
-    <div class="px-3 py-2 border-b border-n-weak bg-n-surface-1 shrink-0">
+    <div
+      v-if="showSearchInput"
+      class="px-3 py-2 border-b border-n-weak bg-n-surface-1 shrink-0 transition-all duration-150 animate-fade-in"
+    >
       <div class="relative flex items-center">
         <span class="absolute left-3 text-n-slate-11 i-lucide-search size-4" />
         <input
@@ -1058,83 +1027,17 @@ watch(conversationFilters, (newVal, oldVal) => {
       </div>
     </div>
 
-    <!-- Horizontal scrolling Agent Filter list -->
+    <!-- Filter Agent Row -->
     <div
-      v-if="agentList && agentList.length > 0 && (activeAssigneeTab === 'all' || activeAssigneeTab === 'resolved')"
-      ref="agentScrollContainer"
-      class="flex items-center gap-3 overflow-x-auto px-4 py-2 border-b border-n-weak select-none custom-thin-scrollbar shrink-0 bg-n-solid-1 scroll-smooth cursor-grab active:cursor-grabbing"
-      @wheel="handleAgentScrollWheel"
-      @mousedown="handleAgentMouseDown"
-      @mouseleave="handleAgentMouseLeave"
-      @mouseup="handleAgentMouseUp"
-      @mousemove="handleAgentMouseMove"
+      v-if="activeAssigneeTab === 'all' || activeAssigneeTab === 'resolved'"
+      class="flex items-center justify-between px-4 py-2.5 border-b border-n-weak bg-n-surface-1 active:bg-n-alpha-1 cursor-pointer transition-colors duration-150 shrink-0"
+      @click="showAgentFilterModal = true"
     >
-      <!-- All Agent Filter Button -->
-      <button
-        type="button"
-        class="flex flex-col items-center gap-1 shrink-0 cursor-pointer focus:outline-none bg-transparent border-none p-0"
-        @click="selectAgentFilter(null)"
-      >
-        <div
-          class="flex items-center justify-center w-10 h-10 rounded-full border text-[10px] font-bold transition-all duration-150"
-          :class="
-            !selectedAgentFilter
-              ? 'border-n-brand bg-n-brand text-white shadow-sm ring-1 ring-n-brand'
-              : 'border-n-weak bg-n-alpha-1 text-n-slate-11'
-          "
-        >
-          {{ $t('CHAT_LIST.ALL_AGENTS_LABEL') }}
-        </div>
-        <span
-          class="text-[10px] truncate max-w-[56px] text-center font-medium leading-none mt-0.5"
-          :class="
-            !selectedAgentFilter
-              ? 'text-n-brand font-semibold'
-              : 'text-n-slate-11'
-          "
-        >
-          {{ $t('CHAT_LIST.ALL_AGENTS_TEXT') }}
-        </span>
-      </button>
-
-      <!-- Active Individual Agents -->
-      <button
-        v-for="agent in sortedAgents"
-        :key="agent.id"
-        type="button"
-        class="flex flex-col items-center gap-1 shrink-0 cursor-pointer focus:outline-none bg-transparent border-none p-0 relative"
-        @click="selectAgentFilter(agent.id)"
-      >
-        <!-- Badge count for open chats -->
-        <span
-          v-if="getAgentOpenCount(agent.id) > 0"
-          class="absolute -top-1 -right-1 flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-n-brand text-white text-[9px] font-bold z-10 shadow-sm border border-white dark:border-n-solid-1"
-        >
-          {{ getAgentOpenCount(agent.id) }}
-        </span>
-        <Avatar
-          :name="agent.name"
-          :src="agent.thumbnail"
-          :size="40"
-          :status="agent.availability_status"
-          class="transition-all duration-150"
-          :class="
-            selectedAgentFilter === agent.id
-              ? 'ring-2 ring-n-brand ring-offset-2 dark:ring-offset-n-solid-1'
-              : ''
-          "
-        />
-        <span
-          class="text-[10px] truncate max-w-[56px] text-center font-medium leading-none mt-0.5"
-          :class="
-            selectedAgentFilter === agent.id
-              ? 'text-n-brand font-semibold'
-              : 'text-n-slate-11'
-          "
-        >
-          {{ agent.name.split(' ')[0] }}
-        </span>
-      </button>
+      <span class="text-xs font-semibold text-n-slate-12">Intervened by</span>
+      <div class="flex items-center gap-1 text-xs text-n-slate-11 font-medium">
+        <span>{{ activeAgentLabel }}</span>
+        <span class="i-lucide-chevron-right size-3.5" />
+      </div>
     </div>
 
     <TeleportWithDirection
@@ -1225,6 +1128,12 @@ watch(conversationFilters, (newVal, oldVal) => {
     <ConversationResolveAttributesModal
       ref="resolveAttributesModalRef"
       @submit="handleResolveWithAttributes"
+    />
+    <AgentFilterModal
+      :show="showAgentFilterModal"
+      :selected-agent="selectedAgentFilter"
+      @close="showAgentFilterModal = false"
+      @select="selectAgentFilter"
     />
   </div>
 </template>
