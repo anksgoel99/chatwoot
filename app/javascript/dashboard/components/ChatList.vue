@@ -284,10 +284,7 @@ const assigneeTabItems = computed(() => {
 });
 
 const showAssigneeInConversationCard = computed(() => {
-  return (
-    hasAppliedFiltersOrActiveFolders.value ||
-    activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ALL
-  );
+  return !!hasAppliedFiltersOrActiveFolders.value;
 });
 
 const currentPageFilterKey = computed(() => {
@@ -1048,7 +1045,7 @@ watch(conversationFilters, (newVal, oldVal) => {
           v-model="searchQuery"
           type="text"
           :placeholder="t('CHAT_LIST.SEARCH.INPUT')"
-          class="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg border border-n-weak bg-n-surface-1 focus:border-n-brand text-n-slate-12 placeholder-n-slate-11 focus:outline-none"
+          class="w-full pl-10 pr-8 py-1.5 text-xs rounded-lg border border-n-weak bg-n-surface-1 focus:border-n-brand text-n-slate-12 placeholder-n-slate-11 focus:outline-none"
         />
         <button
           v-if="searchQuery"

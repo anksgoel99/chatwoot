@@ -105,18 +105,30 @@ export default {
     },
   },
   mounted() {
+    const checkKeyboard = () => {
+      const isInputFocused = document.activeElement && 
+        (document.activeElement.tagName === 'INPUT' || 
+         document.activeElement.tagName === 'TEXTAREA' || 
+         document.activeElement.isContentEditable);
+      const isViewportShrunk = window.visualViewport
+        ? (window.innerHeight - window.visualViewport.height > 100)
+        : false;
+      this.isKeyboardActive = !!(isInputFocused || isViewportShrunk);
+    };
+
+    this.dashboardViewportResizeHandler = checkKeyboard;
+    window.addEventListener('focusin', checkKeyboard);
+    window.addEventListener('focusout', checkKeyboard);
+
     if (window.visualViewport) {
-      const checkKeyboard = () => {
-        this.isKeyboardActive =
-          window.innerHeight - window.visualViewport.height > 100;
-      };
       window.visualViewport.addEventListener('resize', checkKeyboard);
       window.visualViewport.addEventListener('scroll', checkKeyboard);
-      this.dashboardViewportResizeHandler = checkKeyboard;
-      checkKeyboard();
     }
+    checkKeyboard();
   },
   unmounted() {
+    window.removeEventListener('focusin', this.dashboardViewportResizeHandler);
+    window.removeEventListener('focusout', this.dashboardViewportResizeHandler);
     if (window.visualViewport && this.dashboardViewportResizeHandler) {
       window.visualViewport.removeEventListener(
         'resize',
