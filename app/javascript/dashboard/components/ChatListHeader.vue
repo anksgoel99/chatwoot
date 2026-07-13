@@ -67,10 +67,11 @@ const toggleConversationLayout = () => {
       class="flex items-center justify-center min-w-0 ltr:pl-9 rtl:pr-9 md:ltr:pl-0 md:rtl:pr-0"
     >
       <h1
-        class="text-base font-medium truncate text-n-slate-12"
+        class="text-base font-semibold truncate text-n-slate-12"
         :title="pageTitle"
       >
-        {{ pageTitle }}
+        <span class="md:hidden">{{ $t('CHAT_LIST.MOBILE_HEADER_TITLE') }}</span>
+        <span class="hidden md:inline">{{ pageTitle }}</span>
       </h1>
       <span
         v-if="
