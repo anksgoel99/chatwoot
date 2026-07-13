@@ -10,6 +10,9 @@ import ResolveAction from '../../buttons/ResolveAction.vue';
 import TransferModal from './TransferModal.vue';
 import ButtonV4 from 'dashboard/components-next/button/Button.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
+import { useAgentsList } from 'dashboard/composables/useAgentsList';
+import { useWindowSize } from '@vueuse/core';
+import Avatar from 'next/avatar/Avatar.vue';
 
 import {
   CMD_MUTE_CONVERSATION,
@@ -21,6 +24,20 @@ import {
 const store = useStore();
 
 const showTransferModal = ref(false);
+const showTransferDropdown = ref(false);
+const transferQuery = ref('');
+const { agentsList } = useAgentsList(false);
+
+const { width: windowWidth } = useWindowSize();
+const isMobile = computed(() => windowWidth.value < 768);
+
+const filteredAgents = computed(() => {
+  const q = transferQuery.value.toLowerCase().trim();
+  if (!q) return agentsList.value;
+  return agentsList.value.filter(agent =>
+    agent.name.toLowerCase().includes(q)
+  );
+});
 
 const handleSelectAgent = agent => {
   const agentId = agent ? agent.id : null;
@@ -36,6 +53,7 @@ const handleSelectAgent = agent => {
     .then(() => {
       useAlert(t('CONVERSATION.CHANGE_AGENT'));
       showTransferModal.value = false;
+      showTransferDropdown.value = false;
     });
 };
 const { t } = useI18n();
@@ -112,7 +130,9 @@ onUnmounted(() => {
 
 <template>
   <div class="relative flex items-center gap-2 actions--container">
+    <!-- Mobile: icon button opening bottom sheet modal -->
     <ButtonV4
+      v-if="isMobile"
       size="sm"
       variant="ghost"
       color="slate"
@@ -121,6 +141,75 @@ onUnmounted(() => {
       class="rounded-md hover:bg-n-alpha-2"
       @click="showTransferModal = true"
     />
+    <!-- Desktop: Text dropdown opening inline popover -->
+    <div v-else class="relative flex items-center">
+      <ButtonV4
+        size="sm"
+        variant="faint"
+        color="slate"
+        icon="i-lucide-user-round-plus"
+        trailing-icon="i-lucide-chevron-down"
+        class="rounded-lg border border-n-weak font-medium text-xs py-1.5 px-3 bg-white dark:bg-n-solid-2 text-n-slate-12 hover:bg-n-alpha-1 shrink-0"
+        @click="showTransferDropdown = !showTransferDropdown"
+      >
+        Transfer To
+      </ButtonV4>
+      
+      <!-- Inline Popover Dropdown -->
+      <div
+        v-if="showTransferDropdown"
+        v-on-clickaway="() => showTransferDropdown = false"
+        class="absolute right-0 top-full mt-1.5 z-[100] w-64 bg-white dark:bg-n-solid-2 border border-n-weak rounded-xl shadow-xl p-3 flex flex-col gap-2 transition-all duration-150 animate-fade-in"
+      >
+        <!-- Search Input -->
+        <div class="flex gap-1.5 items-center px-2 py-1 rounded-lg bg-n-alpha-1 border border-n-weak focus-within:border-n-brand/40">
+          <span class="w-3.5 h-3.5 i-lucide-search text-n-slate-11 shrink-0" />
+          <input
+            v-model="transferQuery"
+            type="search"
+            placeholder="Search by name..."
+            class="w-full h-7 bg-transparent border-none text-xs text-n-slate-12 focus:outline-none placeholder-n-slate-10"
+          />
+        </div>
+
+        <!-- List of Agents -->
+        <div class="max-h-60 overflow-y-auto flex flex-col gap-1 pr-0.5 custom-thin-scrollbar">
+          <button
+            v-for="agent in filteredAgents"
+            :key="agent.id"
+            type="button"
+            class="flex items-center justify-between w-full p-1.5 hover:bg-n-alpha-2 rounded-lg text-left cursor-pointer border-none bg-transparent"
+            @click="handleSelectAgent(agent)"
+          >
+            <div class="flex items-center gap-2">
+              <Avatar
+                :name="agent.name"
+                :src="agent.thumbnail"
+                :size="24"
+                class="shrink-0"
+              />
+              <span class="text-xs font-medium text-n-slate-12">
+                {{ agent.name }}
+              </span>
+            </div>
+            <span
+              class="w-2 h-2 rounded-full"
+              :class="
+                agent.availability_status === 'online'
+                  ? 'bg-green-500'
+                  : 'bg-n-slate-6'
+              "
+            />
+          </button>
+          <div
+            v-if="!filteredAgents.length"
+            class="text-center py-4 text-xs text-n-slate-11"
+          >
+            No agents found
+          </div>
+        </div>
+      </div>
+    </div>
     <ResolveAction
       :conversation-id="currentChat.id"
       :status="currentChat.status"
