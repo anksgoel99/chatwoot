@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, computed, ref, toRefs } from 'vue';
+import { onMounted, onUnmounted, computed, ref, toRefs } from 'vue';
 import { useTimeoutFn } from '@vueuse/core';
 import { provideMessageContext } from './provider.js';
 import { useTrack } from 'dashboard/composables';
@@ -493,19 +493,34 @@ const avatarTooltip = computed(() => {
   return `${t('CONVERSATION.SENT_BY')} ${avatarInfo.value.name}`;
 });
 
+const handleScrollToMessage = ({ messageId }) => {
+  if (Number(messageId) === Number(props.id)) {
+    showBackgroundHighlight.value = true;
+    useTimeoutFn(() => {
+      showBackgroundHighlight.value = false;
+    }, 3000);
+  }
+};
+
 const setupHighlightTimer = () => {
   if (Number(route.query.messageId) !== Number(props.id)) {
     return;
   }
 
   showBackgroundHighlight.value = true;
-  const HIGHLIGHT_TIMER = 1000;
   useTimeoutFn(() => {
     showBackgroundHighlight.value = false;
-  }, HIGHLIGHT_TIMER);
+  }, 3000);
 };
 
-onMounted(setupHighlightTimer);
+onMounted(() => {
+  setupHighlightTimer();
+  emitter.on(BUS_EVENTS.SCROLL_TO_MESSAGE, handleScrollToMessage);
+});
+
+onUnmounted(() => {
+  emitter.off(BUS_EVENTS.SCROLL_TO_MESSAGE, handleScrollToMessage);
+});
 
 const touchStartX = ref(0);
 const touchStartY = ref(0);
@@ -582,7 +597,7 @@ provideMessageContext({
       flexOrientationClass,
       {
         'group-with-next': shouldGroupWithNext,
-        'bg-n-alpha-1': showBackgroundHighlight,
+        'bg-n-brand/10 ring-2 ring-n-brand rounded-2xl p-1 shadow-md scale-[1.01] transition-all duration-300 z-10': showBackgroundHighlight,
       },
     ]"
   >
