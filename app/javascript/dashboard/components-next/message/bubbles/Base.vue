@@ -77,7 +77,7 @@ const shouldShowMeta = computed(
 );
 
 const replyToPreview = computed(() => {
-  if (!inReplyTo) return '';
+  if (!inReplyTo.value) return '';
 
   const { content, attachments } = inReplyTo.value;
 
