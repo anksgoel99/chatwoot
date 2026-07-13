@@ -1,5 +1,13 @@
 <script setup>
-import { ref, unref, provide, computed, watch, onMounted } from 'vue';
+import {
+  ref,
+  unref,
+  provide,
+  computed,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+} from 'vue';
 import { useStore } from 'vuex';
 import { useRoute, useRouter } from 'vue-router';
 import {
@@ -108,6 +116,19 @@ const agentList = useMapGetter('agents/getAgents');
 const selectedAgentFilter = ref(null);
 const showAgentFilterModal = ref(false);
 const showSearchInput = ref(false);
+
+const sidebarWidth = ref(384);
+
+const loadWidth = () => {
+  try {
+    const savedWidth = localStorage.getItem('tapify_sidebar_width');
+    if (savedWidth) {
+      sidebarWidth.value = parseInt(savedWidth, 10);
+    }
+  } catch (e) {
+    // Ignore
+  }
+};
 
 const activeAgentLabel = computed(() => {
   if (selectedAgentFilter.value === 'me') return 'Me';
@@ -695,7 +716,9 @@ function updateAssigneeTab(selectedTab) {
     } else {
       activeStatus.value = wootConstants.STATUS_TYPE.OPEN;
     }
-    if (!currentPage.value) {
+    const pageIndex =
+      store.getters['conversationPage/getCurrentPageFilter'](selectedTab);
+    if (!pageIndex) {
       fetchConversations();
     }
   }
@@ -893,6 +916,8 @@ useEmitter('fetch_conversation_stats', () => {
 });
 
 onMounted(() => {
+  loadWidth();
+  window.addEventListener('resize-sidebar', loadWidth);
   store.dispatch('setChatListFilters', conversationFilters.value);
   setFiltersFromUISettings();
   store.dispatch('setChatStatusFilter', activeStatus.value);
@@ -901,6 +926,10 @@ onMounted(() => {
   if (hasActiveFolders.value) {
     store.dispatch('campaigns/get');
   }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize-sidebar', loadWidth);
 });
 
 const deleteConversationDialogRef = ref(null);
@@ -974,8 +1003,9 @@ watch(conversationFilters, (newVal, oldVal) => {
     class="flex flex-col flex-shrink-0 conversations-list-wrap bg-n-surface-1 relative"
     :class="[
       { hidden: !showConversationList },
-      isOnExpandedLayout ? 'basis-full' : 'w-[340px] 2xl:w-[412px]',
+      isOnExpandedLayout ? 'basis-full' : '',
     ]"
+    :style="!isOnExpandedLayout ? { width: `${sidebarWidth}px` } : {}"
   >
     <slot />
     <ChatListHeader

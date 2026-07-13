@@ -79,6 +79,7 @@ export default {
           sidebarWidth.value = newWidth;
           try {
             localStorage.setItem('tapify_sidebar_width', newWidth.toString());
+            window.dispatchEvent(new Event('resize-sidebar'));
           } catch (err) {
             // Fail silently
           }
