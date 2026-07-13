@@ -18,7 +18,7 @@
     "ALL_AGENTS_LABEL": "ALL",
     "ALL_AGENTS_TEXT": "All",
     "ASSIGNEE_TYPE_TABS": {
-      "me": "Mine",
+      "me": "Open",
       "unassigned": "Unassigned",
       "all": "All",
       "resolved": "Resolved"

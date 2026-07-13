@@ -270,15 +270,13 @@ const assigneeTabItems = computed(() => {
     count: localResolvedCount,
   };
 
-  const mineTab = baseTabs.find(t => t.key === 'me');
-  const unassignedTab = baseTabs.find(t => t.key === 'unassigned');
-  const allTab = baseTabs.find(t => t.key === 'all');
+  const mineTab = baseTabs.find(tab => tab.key === 'me');
+  const unassignedTab = baseTabs.find(tab => tab.key === 'unassigned');
 
   const orderedTabs = [];
-  if (resolvedTab) orderedTabs.push(resolvedTab);
-  if (unassignedTab) orderedTabs.push(unassignedTab);
   if (mineTab) orderedTabs.push(mineTab);
-  if (allTab) orderedTabs.push(allTab);
+  if (unassignedTab) orderedTabs.push(unassignedTab);
+  if (resolvedTab) orderedTabs.push(resolvedTab);
 
   return orderedTabs;
 });
@@ -389,7 +387,9 @@ const pageTitle = computed(() => {
   if (hasActiveFolders.value) {
     return activeFolder.value.name;
   }
-  const currentTab = assigneeTabItems.value.find(t => t.key === activeAssigneeTab.value);
+  const currentTab = assigneeTabItems.value.find(
+    tab => tab.key === activeAssigneeTab.value
+  );
   return currentTab ? currentTab.name : t('CHAT_LIST.TAB_HEADING');
 });
 
@@ -457,7 +457,8 @@ const conversationList = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase().trim();
     localConversationList = localConversationList.filter(conversation => {
-      const contact = getContact.value(conversation.contact_inbox?.contact_id) || {};
+      const contact =
+        getContact.value(conversation.contact_inbox?.contact_id) || {};
       const contactName = (contact.name || '').toLowerCase();
       const contactPhone = (contact.phone_number || '').replace(/\D/g, '');
       const cleanQuery = query.replace(/\D/g, '');
@@ -1031,7 +1032,9 @@ watch(conversationFilters, (newVal, oldVal) => {
       :is-on-expanded-layout="isOnExpandedLayout"
       :conversation-stats="conversationStats"
       :is-list-loading="chatListLoading"
-      :show-status-filter="activeAssigneeTab !== 'resolved' && activeAssigneeTab !== 'unassigned'"
+      :show-status-filter="
+        activeAssigneeTab !== 'resolved' && activeAssigneeTab !== 'unassigned'
+      "
       @add-folders="onClickOpenAddFoldersModal"
       @delete-folders="onClickOpenDeleteFoldersModal"
       @filters-modal="onToggleAdvanceFiltersModal"
@@ -1063,7 +1066,11 @@ watch(conversationFilters, (newVal, oldVal) => {
 
     <!-- Horizontal scrolling Agent Filter list -->
     <div
-      v-if="agentList && agentList.length > 0 && (activeAssigneeTab === 'all' || activeAssigneeTab === 'resolved')"
+      v-if="
+        agentList &&
+        agentList.length > 0 &&
+        (activeAssigneeTab === 'all' || activeAssigneeTab === 'resolved')
+      "
       ref="agentScrollContainer"
       class="flex items-center gap-3 overflow-x-auto px-4 py-2 border-b border-n-weak select-none custom-thin-scrollbar shrink-0 bg-n-solid-1 scroll-smooth cursor-grab active:cursor-grabbing"
       @wheel="handleAgentScrollWheel"
