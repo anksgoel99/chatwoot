@@ -50,22 +50,26 @@ const formattedBody = computed(() => {
 
 <style lang="scss">
 .prose-bubble {
+  font-size: 0.8125rem !important;
+
   p {
-    margin-top: 0.25rem !important;
-    margin-bottom: 0.25rem !important;
-    line-height: 1.4 !important;
+    margin-top: 0.125rem !important;
+    margin-bottom: 0.125rem !important;
+    line-height: 1.35 !important;
+    font-size: 0.8125rem !important;
   }
 
   ul,
   ol {
-    margin-top: 0.25rem !important;
-    margin-bottom: 0.25rem !important;
+    margin-top: 0.125rem !important;
+    margin-bottom: 0.125rem !important;
     padding-left: 1.25rem !important;
   }
 
   li {
-    margin-top: 0.125rem !important;
-    margin-bottom: 0.125rem !important;
+    margin-top: 0.075rem !important;
+    margin-bottom: 0.075rem !important;
+    font-size: 0.8125rem !important;
   }
 }
 </style>

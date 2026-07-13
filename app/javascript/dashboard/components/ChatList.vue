@@ -17,7 +17,6 @@ import DeleteCustomViews from 'dashboard/routes/dashboard/customviews/DeleteCust
 import ConversationBulkActions from './widgets/conversation/conversationBulkActions/Index.vue';
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
 import ConversationResolveAttributesModal from 'dashboard/components-next/ConversationWorkflow/ConversationResolveAttributesModal.vue';
-import Avatar from 'next/avatar/Avatar.vue';
 import AgentFilterModal from './widgets/conversation/AgentFilterModal.vue';
 
 import { useUISettings } from 'dashboard/composables/useUISettings';
@@ -118,13 +117,6 @@ const activeAgentLabel = computed(() => {
   return agent ? agent.name : 'Any';
 });
 
-const getAgentOpenCount = agentId => {
-  const allConversations = store.state.conversations.allConversations || [];
-  return allConversations.filter(
-    c => c.meta?.assignee?.id === agentId && c.status === 'open'
-  ).length;
-};
-
 const selectAgentFilter = agentId => {
   selectedAgentFilter.value = agentId;
 };
@@ -223,9 +215,9 @@ const assigneeTabItems = computed(() => {
     count: localResolvedCount,
   };
 
-  const mineTab = baseTabs.find(t => t.key === 'me');
-  const unassignedTab = baseTabs.find(t => t.key === 'unassigned');
-  const allTab = baseTabs.find(t => t.key === 'all');
+  const mineTab = baseTabs.find(tab => tab.key === 'me');
+  const unassignedTab = baseTabs.find(tab => tab.key === 'unassigned');
+  const allTab = baseTabs.find(tab => tab.key === 'all');
 
   const orderedTabs = [];
   if (resolvedTab) orderedTabs.push(resolvedTab);
@@ -339,7 +331,9 @@ const pageTitle = computed(() => {
   if (hasActiveFolders.value) {
     return activeFolder.value.name;
   }
-  const currentTab = assigneeTabItems.value.find(t => t.key === activeAssigneeTab.value);
+  const currentTab = assigneeTabItems.value.find(
+    tabItem => tabItem.key === activeAssigneeTab.value
+  );
   return currentTab ? currentTab.name : t('CHAT_LIST.TAB_HEADING');
 });
 
@@ -400,7 +394,8 @@ const conversationList = computed(() => {
   if (selectedAgentFilter.value) {
     if (selectedAgentFilter.value === 'me') {
       localConversationList = localConversationList.filter(
-        conversation => conversation.meta?.assignee?.id === currentUser.value?.id
+        conversation =>
+          conversation.meta?.assignee?.id === currentUser.value?.id
       );
     } else if (selectedAgentFilter.value === 'other') {
       localConversationList = localConversationList.filter(
@@ -419,9 +414,9 @@ const conversationList = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase().trim();
     localConversationList = localConversationList.filter(conversation => {
-      const contact = getContact.value(conversation.contact_inbox?.contact_id) || {};
-      const contactName = (contact.name || '').toLowerCase();
-      const contactPhone = (contact.phone_number || '').replace(/\D/g, '');
+      const sender = conversation.meta?.sender || {};
+      const contactName = (sender.name || '').toLowerCase();
+      const contactPhone = (sender.phone_number || '').replace(/\D/g, '');
       const cleanQuery = query.replace(/\D/g, '');
 
       const matchName = contactName.includes(query);
@@ -693,8 +688,6 @@ function updateAssigneeTab(selectedTab) {
     resetBulkActions();
     emitter.emit('clearSearchInput');
     searchQuery.value = '';
-    agentSearchQuery.value = '';
-    showAgentSearchInput.value = false;
     activeAssigneeTab.value = selectedTab;
     selectedAgentFilter.value = null;
     if (selectedTab === 'resolved') {
@@ -993,7 +986,9 @@ watch(conversationFilters, (newVal, oldVal) => {
       :is-on-expanded-layout="isOnExpandedLayout"
       :conversation-stats="conversationStats"
       :is-list-loading="chatListLoading"
-      :show-status-filter="activeAssigneeTab !== 'resolved' && activeAssigneeTab !== 'unassigned'"
+      :show-status-filter="
+        activeAssigneeTab !== 'resolved' && activeAssigneeTab !== 'unassigned'
+      "
       @add-folders="onClickOpenAddFoldersModal"
       @delete-folders="onClickOpenDeleteFoldersModal"
       @filters-modal="onToggleAdvanceFiltersModal"
@@ -1009,17 +1004,19 @@ watch(conversationFilters, (newVal, oldVal) => {
       class="px-3 py-2 border-b border-n-weak bg-n-surface-1 shrink-0 transition-all duration-150 animate-fade-in"
     >
       <div class="relative flex items-center">
-        <span class="absolute left-3 text-n-slate-11 i-lucide-search size-4" />
+        <span
+          class="absolute ltr:left-3 rtl:right-3 text-n-slate-11 i-lucide-search size-4"
+        />
         <input
           v-model="searchQuery"
           type="text"
           :placeholder="t('CHAT_LIST.SEARCH.INPUT')"
-          class="w-full pl-10 pr-8 py-1.5 text-xs rounded-lg border border-n-weak bg-n-surface-1 focus:border-n-brand text-n-slate-12 placeholder-n-slate-11 focus:outline-none"
+          class="w-full ltr:pl-10 rtl:pr-10 ltr:pr-8 rtl:pl-8 py-1.5 text-xs rounded-lg border border-n-weak bg-n-surface-1 focus:border-n-brand text-n-slate-12 placeholder-n-slate-11 focus:outline-none"
         />
         <button
           v-if="searchQuery"
           type="button"
-          class="absolute right-3 text-n-slate-11 hover:text-n-slate-12 cursor-pointer focus:outline-none bg-transparent border-none p-0"
+          class="absolute ltr:right-3 rtl:left-3 text-n-slate-11 hover:text-n-slate-12 cursor-pointer focus:outline-none bg-transparent border-none p-0"
           @click="searchQuery = ''"
         >
           <span class="i-lucide-x size-4" />
@@ -1033,7 +1030,9 @@ watch(conversationFilters, (newVal, oldVal) => {
       class="flex items-center justify-between px-4 py-2.5 border-b border-n-weak bg-n-surface-1 active:bg-n-alpha-1 cursor-pointer transition-colors duration-150 shrink-0"
       @click="showAgentFilterModal = true"
     >
-      <span class="text-xs font-semibold text-n-slate-12">Intervened by</span>
+      <span class="text-xs font-semibold text-n-slate-12">{{
+        $t('CHAT_LIST.INTERVENED_BY')
+      }}</span>
       <div class="flex items-center gap-1 text-xs text-n-slate-11 font-medium">
         <span>{{ activeAgentLabel }}</span>
         <span class="i-lucide-chevron-right size-3.5" />

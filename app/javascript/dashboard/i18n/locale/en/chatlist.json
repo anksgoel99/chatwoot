@@ -13,6 +13,7 @@
     "SEARCH": {
       "INPUT": "Search by name or number"
     },
+    "INTERVENED_BY": "Intervened by",
     "FILTER_ALL": "All",
     "ALL_AGENTS_LABEL": "ALL",
     "ALL_AGENTS_TEXT": "All",

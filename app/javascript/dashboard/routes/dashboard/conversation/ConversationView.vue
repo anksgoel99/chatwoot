@@ -1,4 +1,5 @@
 <script>
+import { ref, onMounted } from 'vue';
 import { mapGetters } from 'vuex';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAccount } from 'dashboard/composables/useAccount';
@@ -57,10 +58,46 @@ export default {
     const { uiSettings, updateUISettings } = useUISettings();
     const { accountId } = useAccount();
 
+    const sidebarWidth = ref(384);
+
+    onMounted(() => {
+      try {
+        const savedWidth = localStorage.getItem('tapify_sidebar_width');
+        if (savedWidth) {
+          sidebarWidth.value = parseInt(savedWidth, 10);
+        }
+      } catch (e) {
+        // Fail silently
+      }
+    });
+
+    const startResize = e => {
+      e.preventDefault();
+      const handleMouseMove = moveEvent => {
+        const newWidth = moveEvent.clientX;
+        if (newWidth >= 240 && newWidth <= 600) {
+          sidebarWidth.value = newWidth;
+          try {
+            localStorage.setItem('tapify_sidebar_width', newWidth.toString());
+          } catch (err) {
+            // Fail silently
+          }
+        }
+      };
+      const handleMouseUp = () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    };
+
     return {
       uiSettings,
       updateUISettings,
       accountId,
+      sidebarWidth,
+      startResize,
     };
   },
   data() {
@@ -204,7 +241,13 @@ export default {
       :conversation-type="conversationType"
       :folders-id="foldersId"
       :is-on-expanded-layout="isOnExpandedLayout"
+      :style="!isOnExpandedLayout ? { width: `${sidebarWidth}px` } : {}"
       @conversation-load="onConversationLoad"
+    />
+    <div
+      v-if="showConversationList && showMessageView"
+      class="hidden md:block w-[3px] bg-slate-800 hover:bg-n-brand active:bg-n-brand cursor-col-resize shrink-0 transition-colors duration-150"
+      @mousedown="startResize"
     />
     <ConversationBox
       v-if="showMessageView"
